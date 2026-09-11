@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ event.title }} · Overview{% endblock %}
+{% block content %}
+<section class="page-heading heading-row event-heading">
+  <div class="event-heading">
+    <div class="event-photo-wrap">
+      {% if event.profile_image %}<img class="event-photo" src="{{ url_for('static', filename='uploads/' + event.profile_image) }}" alt="{{ event.title }}">
+      {% else %}<div class="event-photo placeholder" aria-label="No event photo"><i class="fa-regular fa-calendar-check" aria-hidden="true"></i></div>{% endif %}
+      {% if is_owner %}<button class="photo-edit" type="button" onclick="document.getElementById('photo-upload').click()" aria-label="Change event photo"><i class="fa-solid fa-camera" aria-hidden="true"></i></button>{% endif %}
+    </div>
+    <div><p class="eyebrow">{{ event.event_type|replace('_', ' ')|title }} · {{ event.plan_tier|title }} plan</p><h1>{{ event.title }}</h1><p><i class="fa-regular fa-calendar" aria-hidden="true"></i> {{ event.event_date.strftime('%d %B %Y') if event.event_date else 'Date not set' }}{% if event.location %} · <i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ event.location }}{% endif %}</p>{% if event.description %}<p class="muted">{{ event.description }}</p>{% endif %}</div>
+  </div>
+  {% if is_owner %}<div class="heading-actions"><form class="photo-form" method="post" action="{{ url_for('main.upload_event_photo') }}" enctype="multipart/form-data"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input id="photo-upload" type="file" name="profile_image" accept="image/jpeg,image/png,image/webp" onchange="this.form.submit()"></form><a class="button secondary" href="{{ url_for('main.setup_event') }}"><i class="fa-solid fa-pen" aria-hidden="true"></i> Edit details</a></div>{% endif %}
+</section>
+{% if is_owner and event.plan_tier == 'free' %}
+<section class="card upgrade-strip"><div><strong>Ready to plan together?</strong><p>Upgrade once for E{{ '%.0f'|format(owner_price) }} to unlock unlimited budget items and stakeholder invitations.</p></div><a class="button primary" href="{{ url_for('billing.pricing') }}"><i class="fa-solid fa-gem" aria-hidden="true"></i> View Standard</a></section><br>
+{% elif is_owner %}
+<section class="card upgrade-strip"><div><strong>Your planning team</strong><p>Invite co-organizers and trusted team members for E{{ '%.0f'|format(stakeholder_price) }} each.</p></div><a class="button primary" href="{{ url_for('billing.team') }}"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> Manage invitations</a></section><br>
+{% endif %}
+<section class="stats-grid">
+  <article class="stat"><span>Total budget</span><strong>E{{ '%.2f'|format(event.budget_target) }}</strong></article>
+  <article class="stat"><span>Current estimate</span><strong>E{{ '%.2f'|format(selected_total) }}</strong></article>
+  <article class="stat {{ 'warning' if remaining < 0 else '' }}"><span>{{ 'Over budget' if remaining < 0 else 'Remaining' }}</span><strong>E{{ '%.2f'|format(remaining|abs) }}</strong></article>
+  <article class="stat"><span>Quotations</span><strong>{{ quote_count }}</strong></article>
+</section>
+<section class="card action-card">
+  <div><p class="eyebrow">Financial planning</p><h2>Compare vendor quotations</h2><p>Add categories such as venue, catering, attire, photography and décor, then collect prices before deciding.</p></div>
+  <a class="button primary" href="{{ url_for('main.budget') }}"><i class="fa-solid fa-arrow-right" aria-hidden="true"></i> Open budget</a>
+</section>
+<section class="card action-card report-card">
+  <div><p class="eyebrow">Event report</p><h2>Your event plan in one document</h2><p>Download a clean PDF summary of the event, budget and selected vendor quotations.</p></div>
+  <a class="button secondary" href="{{ url_for('main.event_report') }}"><i class="fa-solid fa-file-arrow-down" aria-hidden="true"></i> Download PDF</a>
+</section>
+{% endblock %}

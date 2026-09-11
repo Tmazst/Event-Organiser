@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Event details{% endblock %}
+{% block content %}
+<div class="narrow">
+  <div class="page-heading"><p class="eyebrow">Event details</p><h1>Let’s set up your plan</h1><p>Only the essentials for now. You can change these details later.</p></div>
+  <form class="card form-card two-column" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="full">Event name<input name="title" value="{{ event.title if event else '' }}" placeholder="e.g. Manzini Business Expo" required></label>
+    <label>Event type<select name="event_type"><option value="wedding" {% if event and event.event_type == 'wedding' %}selected{% endif %}>Wedding</option><option value="birthday" {% if event and event.event_type == 'birthday' %}selected{% endif %}>Birthday</option><option value="conference" {% if event and event.event_type == 'conference' %}selected{% endif %}>Conference</option><option value="corporate" {% if event and event.event_type == 'corporate' %}selected{% endif %}>Corporate event</option><option value="church" {% if event and event.event_type == 'church' %}selected{% endif %}>Church event</option><option value="festival" {% if event and event.event_type == 'festival' %}selected{% endif %}>Festival</option><option value="sports" {% if event and event.event_type == 'sports' %}selected{% endif %}>Sports event</option><option value="community" {% if event and event.event_type == 'community' %}selected{% endif %}>Community event</option><option value="fundraiser" {% if event and event.event_type == 'fundraiser' %}selected{% endif %}>Fundraiser</option><option value="other" {% if not event or event.event_type == 'other' %}selected{% endif %}>Other</option></select></label>
+    <label>Event date<input type="date" name="event_date" value="{{ event.event_date.isoformat() if event and event.event_date else '' }}"></label>
+    <label>Location<input name="location" value="{{ event.location or '' if event else '' }}" placeholder="e.g. Manzini"></label>
+    <label class="full">Short description<textarea name="description" rows="3" placeholder="What is this event about?">{{ event.description or '' if event else '' }}</textarea></label>
+    <label class="full">Overall budget (E)<input type="number" min="0" step="0.01" name="budget_target" value="{{ event.budget_target if event else '' }}"></label>
+    <button class="button primary full" type="submit"><i class="fa-solid fa-arrow-right" aria-hidden="true"></i> Save and continue</button>
+  </form>
+</div>
+{% endblock %}

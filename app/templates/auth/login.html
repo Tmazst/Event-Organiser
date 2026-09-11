@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Log in · Event Planner{% endblock %}
+{% block content %}
+<section class="auth-layout">
+  <div class="welcome-panel">
+    <p class="eyebrow">Plan together, spend wisely</p>
+    <h1>Your event plans, all in one calm place.</h1>
+    <p>Compare quotations, follow your budget and keep everyone working from the same plan.</p>
+  </div>
+  <form class="card form-card" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="invite_token" value="{{ invite_token }}">
+    <h2>Welcome back</h2>
+    <label>Email<input type="email" name="email" required autocomplete="email"></label>
+    <label>Password<input type="password" name="password" required autocomplete="current-password"></label>
+    <button class="button primary" type="submit"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Log in</button>
+    <p class="form-foot">New here? <a href="{{ url_for('main.register', invite=invite_token) }}">Create an account</a></p>
+  </form>
+</section>
+{% endblock %}
