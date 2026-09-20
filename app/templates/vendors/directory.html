@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Find vendors · Umcimby{% endblock %}
+{% block content %}
+<section class="page-heading"><p class="eyebrow">Vendor directory</p><h1>Find what your event needs</h1><p>Search by product, service, store name or location.</p></section>
+<form class="vendor-search" method="get"><label class="search-field"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input name="q" value="{{ query }}" placeholder="Try tents, chairs, catering or Manzini" aria-label="Search vendors"></label><button class="button primary" type="submit">Search</button>{% if query %}<a class="button secondary" href="{{ url_for('vendors.directory') }}">Clear</a>{% endif %}</form>
+<section class="vendor-grid">
+  {% for store in stores %}<article class="card vendor-card"><div class="vendor-card-icon"><i class="fa-solid fa-store" aria-hidden="true"></i></div><div><p class="eyebrow">{{ store.location }}</p><h2>{{ store.store_name }}</h2><p>{{ store.offering_summary }}</p><small>{{ store.products|length }} listed item{{ '' if store.products|length == 1 else 's' }}</small></div><a class="button secondary" href="{{ url_for('vendors.store_detail', store_id=store.id) }}">View store</a></article>
+  {% else %}<div class="card empty vendor-empty"><i class="fa-solid fa-store-slash" aria-hidden="true"></i><p>No vendors matched your search yet.</p></div>{% endfor %}
+</section>
+{% endblock %}

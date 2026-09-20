@@ -37,12 +37,18 @@ def current_event():
 
 def invitation_redirect():
     token = request.form.get("invite_token") or request.args.get("invite") or session.pop("invite_token", None)
-    return redirect(url_for("billing.accept_invitation", token=token)) if token else redirect(url_for("main.dashboard"))
+    if token:
+        return redirect(url_for("billing.accept_invitation", token=token))
+    destination = "vendors.dashboard" if current_user.account_type == "vendor" else "main.dashboard"
+    return redirect(url_for(destination))
 
 
 @bp.route("/")
 def index():
-    return redirect(url_for("main.dashboard" if current_user.is_authenticated else "main.login"))
+    if not current_user.is_authenticated:
+        return redirect(url_for("main.login"))
+    destination = "vendors.dashboard" if current_user.account_type == "vendor" else "main.dashboard"
+    return redirect(url_for(destination))
 
 
 @bp.route("/offline")
@@ -53,7 +59,7 @@ def offline():
 @bp.route("/register", methods=["GET", "POST"])
 def register():
     if current_user.is_authenticated:
-        return redirect(url_for("main.dashboard"))
+        return invitation_redirect()
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         email = request.form.get("email", "").strip().lower()
@@ -66,6 +72,9 @@ def register():
         except ValueError as error:
             phone_number, phone_error = None, str(error)
         password = request.form.get("password", "")
+        account_type = request.form.get("account_type", "organizer")
+        if account_type not in {"organizer", "vendor"} or request.form.get("invite_token"):
+            account_type = "organizer"
         if phone_error:
             flash(phone_error, "error")
         elif not name or not email or len(password) < 6:
@@ -77,7 +86,7 @@ def register():
         else:
             user = User(
                 name=name, email=email, phone_number=phone_number,
-                phone_country=phone_country,
+                phone_country=phone_country, account_type=account_type,
             )
             user.set_password(password)
             db.session.add(user)
@@ -85,7 +94,9 @@ def register():
             login_user(user)
             if request.form.get("invite_token"):
                 return invitation_redirect()
-            return redirect(url_for("main.setup_event"))
+            return redirect(url_for(
+                "vendors.setup_store" if account_type == "vendor" else "main.setup_event"
+            ))
     return render_template(
         "auth/register.html",
         invite_token=request.form.get("invite_token") or request.args.get("invite", ""),
@@ -98,7 +109,7 @@ def register():
 @bp.route("/login", methods=["GET", "POST"])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for("main.dashboard"))
+        return invitation_redirect()
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         user = db.session.scalar(select(User).where(User.email == email))

@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from app import create_app
 from app.extensions import db
-from app.models import Invitation, Payment, Event, EventMember, User
+from app.models import Invitation, Payment, Event, EventMember, User, VendorProduct, VendorStore
 
 
 class TestConfig:
@@ -40,10 +40,10 @@ def client(app):
     return app.test_client()
 
 
-def register(client, name, email, phone, invite_token="", phone_country="SZ"):
+def register(client, name, email, phone, invite_token="", phone_country="SZ", account_type="organizer"):
     return client.post("/register", data={
         "name": name, "email": email, "phone_number": phone, "phone_country": phone_country,
-        "password": "secret1", "invite_token": invite_token,
+        "password": "secret1", "invite_token": invite_token, "account_type": account_type,
     })
 
 
@@ -301,3 +301,71 @@ def test_legacy_photos_move_only_when_command_runs(app):
     assert "Migrated 1 event photo." in result.output
     assert not legacy.exists()
     assert destination.read_bytes() == b"legacy-photo"
+
+
+def test_vendor_registration_redirects_to_store_setup(app, client):
+    response = register(
+        client, "Vendor Owner", "vendor@example.com", "76111222", account_type="vendor"
+    )
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/vendor/setup")
+    with app.app_context():
+        user = db.session.scalar(select(User).where(User.email == "vendor@example.com"))
+        assert user.account_type == "vendor"
+        assert user.vendor_store is None
+
+
+def test_vendor_can_create_store_and_catalogue_with_optional_prices(app, client):
+    register(client, "Vendor Owner", "vendor@example.com", "76111222", account_type="vendor")
+    response = client.post("/vendor/setup", data={
+        "store_name": "Manzini Event Hire",
+        "contact_phone": "+268 7611 1222",
+        "contact_email": "sales@example.com",
+        "location": "Matsapha, Manzini",
+        "offering_summary": "Event tents, tables and chairs",
+    })
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/vendor")
+
+    client.post("/vendor/products", data={
+        "name": "100-seater tent", "description": "White event tent",
+        "price": "2500", "price_unit": "per day", "publish_price": "yes",
+    })
+    client.post("/vendor/products", data={
+        "name": "Round tables", "description": "Seats ten guests",
+        "price": "120", "price_unit": "each",
+    })
+    with app.app_context():
+        store = db.session.scalar(select(VendorStore))
+        products = db.session.scalars(select(VendorProduct).order_by(VendorProduct.id)).all()
+        assert store.store_name == "Manzini Event Hire"
+        assert len(products) == 2
+        assert products[0].publish_price is True
+        assert str(products[0].price) == "2500.00"
+        assert products[1].publish_price is False
+
+
+def test_organizer_can_search_and_view_vendor_products(app, client):
+    register(client, "Vendor Owner", "vendor@example.com", "76111222", account_type="vendor")
+    client.post("/vendor/setup", data={
+        "store_name": "Manzini Event Hire", "contact_phone": "+268 7611 1222",
+        "location": "Matsapha", "offering_summary": "Tents, tables and chairs",
+    })
+    client.post("/vendor/products", data={
+        "name": "100-seater tent", "price": "2500", "price_unit": "per day",
+        "publish_price": "yes",
+    })
+    client.post("/vendor/products", data={"name": "Plastic chairs", "price": "8"})
+    with app.app_context():
+        store_id = db.session.scalar(select(VendorStore.id))
+
+    client.post("/logout")
+    register(client, "Organizer", "organizer@example.com", "76222333")
+    results = client.get("/vendors?q=tent")
+    assert results.status_code == 200
+    assert b"Manzini Event Hire" in results.data
+    store_page = client.get(f"/vendors/{store_id}")
+    assert b"100-seater tent" in store_page.data
+    assert b"E2,500.00" in store_page.data
+    assert b"Plastic chairs" in store_page.data
+    assert b"Contact vendor for price" in store_page.data

@@ -12,7 +12,10 @@
     <label>Email<input type="email" name="email" required autocomplete="email"></label>
     {{ phone_fields(countries, selected_country, phone_value) }}
     <label>Password<input type="password" name="password" minlength="6" required autocomplete="new-password"></label>
-    <button class="button primary" type="submit"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> Create account</button>
+    <div class="account-type-actions">
+      <button class="button primary" type="submit" name="account_type" value="organizer"><i class="fa-solid fa-calendar-plus" aria-hidden="true"></i> Create organizer account</button>
+      {% if not invite_token %}<button class="button secondary" type="submit" name="account_type" value="vendor"><i class="fa-solid fa-store" aria-hidden="true"></i> I am a vendor</button>{% endif %}
+    </div>
     <p class="form-foot">Already registered? <a href="{{ url_for('main.login', invite=invite_token) }}">Log in</a></p>
   </form>
 </section>

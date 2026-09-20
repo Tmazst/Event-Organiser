@@ -21,6 +21,10 @@ A simple event-planning web app for Eswatini organizers. The focused MVP lets a 
 - Installable Umcimby PWA with branded app icons and an offline fallback
 - Responsive, simple interface
 - Downloadable event report with budget and selected quotation details
+- Organizer and vendor account choices during registration
+- Vendor store profiles with contact details, location and supply summary
+- Vendor product catalogues with optional public prices
+- Searchable vendor directory for organizers
 
 ## Run locally
 
@@ -69,7 +73,7 @@ flask --app run db upgrade
 
 ## Deliberately deferred
 
-Programme planning, guest lists, tasks and messaging can be introduced later. The current navigation remains intentionally small so new users can understand the app quickly.
+Programme planning, guest lists, tasks, messaging and direct quotation requests can be introduced later. The current navigation remains intentionally small so new users can understand the app quickly.
 
 ## Pricing configuration
 

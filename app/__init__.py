@@ -136,6 +136,9 @@ def create_app(config_class=Config):
     from .billing import bp as billing_bp
     app.register_blueprint(billing_bp)
 
+    from .vendors import bp as vendors_bp
+    app.register_blueprint(vendors_bp)
+
     from .payment_gateway import build_gateway
     build_gateway().init_app(app)
 
