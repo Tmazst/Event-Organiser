@@ -14,7 +14,7 @@
   <div class="team-list">
     {% for invitation in event.invitations|reverse %}
       <article class="card invite-card"><div><span class="status">{{ invitation.status|replace('_', ' ')|title }}</span><h2>{{ invitation.invitee_name or invitation.role|replace('_', ' ')|title }}</h2><p>{{ 'You pay' if invitation.payer == 'owner' else 'Stakeholder pays' }}</p></div>
-      {% if invitation.status in ['pending', 'paid'] %}<div class="invite-link"><label>Invite link<input readonly value="{{ url_for('billing.accept_invitation', token=invitation.token, _external=True) }}" onclick="this.select()"></label></div>{% endif %}</article>
+      {% if invitation.status in ['pending', 'paid'] %}<div class="invite-link"><label>Invite link<input readonly value="{{ url_for('billing.accept_invitation', token=invitation.token, _external=True) }}" data-select-on-click></label></div>{% endif %}</article>
     {% else %}<div class="card empty"><h2>No invitations yet</h2><p>Create a private link for your first stakeholder.</p></div>{% endfor %}
   </div>
 </section>

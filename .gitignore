@@ -1,8 +1,9 @@
 __pycache__/
 *.py[cod]
 .venv/
+.test-venv/
 .env
 instance/
 .pytest_cache/
-app/static/uploads/weddings/*
-!app/static/uploads/weddings/.gitkeep
+app/static/uploads/events/*
+!app/static/uploads/events/.gitkeep

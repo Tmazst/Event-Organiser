@@ -6,7 +6,7 @@ from sqlalchemy import select
 
 from app import create_app
 from app.extensions import db
-from app.models import Invitation, Payment, Event, EventMember
+from app.models import Invitation, Payment, Event, EventMember, User
 
 
 class TestConfig:
@@ -20,6 +20,7 @@ class TestConfig:
     STAKEHOLDER_PRICE = "30.00"
     PAYMENT_CURRENCY = "SZL"
     MOJAPOS_MOCK_AUTO_COMPLETE = True
+    MOJAPOS_SUPPORTED_COUNTRIES = ("SZ",)
 
 
 @pytest.fixture()
@@ -37,9 +38,9 @@ def client(app):
     return app.test_client()
 
 
-def register(client, name, email, phone, invite_token=""):
+def register(client, name, email, phone, invite_token="", phone_country="SZ"):
     return client.post("/register", data={
-        "name": name, "email": email, "phone_number": phone,
+        "name": name, "email": email, "phone_number": phone, "phone_country": phone_country,
         "password": "secret1", "invite_token": invite_token,
     })
 
@@ -66,7 +67,7 @@ def test_free_limit_and_budget_totals(app, client):
     client.post("/budget/1/quotes", data={"vendor_name": "Tech Xolutions", "amount": "8500"})
     client.post("/quotes/1/select")
     budget = client.get("/budget")
-    assert b"E8500.00" in budget.data
+    assert b"E8,500.00" in budget.data
     with app.app_context():
         assert len(db.session.scalar(select(Event)).categories) == 4
 
@@ -133,14 +134,14 @@ def test_invitee_can_pay_their_own_e30_access(app, client):
 def test_account_details_can_be_updated(app, client):
     create_owner_event(client)
     response = client.post("/account", data={
-        "name": "Updated Owner", "email": "updated@example.com", "phone_number": "76456789",
+        "name": "Updated Owner", "email": "updated@example.com", "phone_number": "76456789", "phone_country": "SZ",
     }, follow_redirects=True)
     assert b"Account details updated" in response.data
     assert b"Free plan" in response.data
     with app.app_context():
         user = db.session.scalar(select(Event).where(Event.owner_id.is_not(None))).owner
         assert user.name == "Updated Owner"
-        assert user.phone_number == "26876456789"
+        assert user.phone_number == "+26876456789"
 
 
 def test_owner_can_upload_event_photo(app, client):
@@ -170,7 +171,7 @@ def test_pwa_files_are_public(client):
     worker = client.get("/service-worker.js")
     assert worker.status_code == 200
     assert worker.headers["Service-Worker-Allowed"] == "/"
-    assert b"event-organiser-static-v1" in worker.data
+    assert b"event-organiser-static-v2" in worker.data
 
     offline = client.get("/offline")
     assert offline.status_code == 200
@@ -187,3 +188,57 @@ def test_event_report_downloads_pdf(client):
     assert response.mimetype == "application/pdf"
     assert response.data.startswith(b"%PDF")
     assert "manzini-business-expo-report.pdf" in response.headers["Content-Disposition"]
+
+
+def test_international_phone_is_stored_in_e164(app, client):
+    response = register(
+        client, "South African User", "za@example.com", "0821234567", phone_country="ZA"
+    )
+    assert response.status_code == 302
+    with app.app_context():
+        user = db.session.scalar(select(User).where(User.email == "za@example.com"))
+        assert user.phone_number == "+27821234567"
+        assert user.phone_country == "ZA"
+
+
+def test_phone_must_match_selected_country(app, client):
+    response = register(
+        client, "Mismatch", "mismatch@example.com", "+27821234567", phone_country="SZ"
+    )
+    assert response.status_code == 200
+    assert b"does not match the selected country" in response.data
+    with app.app_context():
+        assert db.session.scalar(select(User).where(User.email == "mismatch@example.com")) is None
+
+
+def test_unsupported_payment_country_is_blocked(app, client):
+    register(client, "South African User", "za@example.com", "0821234567", phone_country="ZA")
+    client.post("/event/setup", data={"title": "Cape Town Expo", "event_type": "conference"})
+    response = client.post("/billing/upgrade", follow_redirects=True)
+    assert b"not currently available for your selected country" in response.data
+    with app.app_context():
+        assert db.session.scalar(select(Payment)) is None
+
+
+def test_event_photo_requires_authentication(app, client):
+    create_owner_event(client)
+    photo = BytesIO()
+    Image.new("RGB", (80, 60), "#176b63").save(photo, "PNG")
+    photo.seek(0)
+    client.post(
+        "/event/photo", data={"profile_image": (photo, "event.png")},
+        content_type="multipart/form-data",
+    )
+    assert client.get("/event/photo").status_code == 200
+    client.post("/logout")
+    response = client.get("/event/photo")
+    assert response.status_code == 302
+    assert "/login" in response.headers["Location"]
+
+
+def test_browser_security_headers_and_private_html(client):
+    response = client.get("/login")
+    assert response.headers["Cache-Control"] == "private, no-store"
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    assert response.headers["X-Frame-Options"] == "DENY"
+    assert "frame-ancestors 'none'" in response.headers["Content-Security-Policy"]

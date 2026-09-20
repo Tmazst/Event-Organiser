@@ -11,6 +11,7 @@ class User(UserMixin, db.Model):
     name = db.Column(db.String(120), nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     phone_number = db.Column(db.String(20), unique=True, nullable=True, index=True)
+    phone_country = db.Column(db.String(2), default="SZ", nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     events = db.relationship("Event", backref="owner", lazy=True, cascade="all, delete-orphan")
@@ -21,6 +22,13 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    @property
+    def phone_display(self):
+        if not self.phone_number:
+            return ""
+        from .phone_numbers import format_phone_for_display
+        return format_phone_for_display(self.phone_number, self.phone_country)
 
 
 class Event(db.Model):

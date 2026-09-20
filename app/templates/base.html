@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v=app_css_version) }}">
 </head>
 <body>
   <header class="topbar">
@@ -41,6 +41,9 @@
     <p>© {{ current_year }} Event Organiser. All rights reserved.</p>
     <p>Powered by TechX</p>
   </footer>
+  <div class="page-loader" id="page-loader" role="status" aria-live="polite" aria-label="Loading" hidden>
+    <span class="page-loader-bar"></span><span class="page-loader-label">Please wait…</span>
+  </div>
   <aside class="install-prompt" id="install-prompt" role="dialog" aria-labelledby="install-title" aria-describedby="install-description" hidden>
     <button class="install-close" id="install-close" type="button" aria-label="Close install prompt"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
     <img src="{{ url_for('static', filename='icons/icon-192.png') }}" alt="" aria-hidden="true">
@@ -48,5 +51,8 @@
     <button class="button primary" id="install-button" type="button"><i class="fa-solid fa-download" aria-hidden="true"></i> Install app</button>
   </aside>
   <script src="{{ url_for('static', filename='js/pwa.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/navigation-loader.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/photo-upload.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/ui-actions.js') }}" defer></script>
 </body>
 </html>
