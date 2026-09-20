@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Form expired · Event Organiser{% endblock %}
+{% block content %}
+<section class="card payment-result">
+  <p class="eyebrow">Form expired</p>
+  <h1>Please try again</h1>
+  <p>This page was open for too long or came from an older cached session. Refresh the page and submit the form again.</p>
+  <a class="button primary" href="{{ request.referrer or url_for('main.index') }}">Return and refresh</a>
+</section>
+{% endblock %}

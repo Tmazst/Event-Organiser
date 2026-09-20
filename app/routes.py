@@ -10,6 +10,7 @@ from sqlalchemy import select
 
 from .extensions import db
 from .models import BudgetCategory, Invitation, Payment, Quotation, User, Event, EventMember
+from .phone_numbers import country_options, normalize_phone
 
 
 bp = Blueprint("main", __name__)
@@ -34,15 +35,6 @@ def current_event():
     return membership.event if membership else None
 
 
-def normalize_phone(value):
-    digits = "".join(character for character in (value or "") if character.isdigit())
-    if digits.startswith("0"):
-        digits = "268" + digits[1:]
-    elif len(digits) == 8:
-        digits = "268" + digits
-    return digits
-
-
 def invitation_redirect():
     token = request.form.get("invite_token") or request.args.get("invite") or session.pop("invite_token", None)
     return redirect(url_for("billing.accept_invitation", token=token)) if token else redirect(url_for("main.dashboard"))
@@ -65,16 +57,28 @@ def register():
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         email = request.form.get("email", "").strip().lower()
-        phone_number = normalize_phone(request.form.get("phone_number"))
+        phone_country = request.form.get("phone_country", "SZ")
+        try:
+            phone_number, phone_country = normalize_phone(
+                request.form.get("phone_number"), phone_country
+            )
+            phone_error = None
+        except ValueError as error:
+            phone_number, phone_error = None, str(error)
         password = request.form.get("password", "")
-        if not name or not email or not phone_number.startswith("268") or len(phone_number) != 11 or len(password) < 6:
-            flash("Enter your name, email, Eswatini phone number and a password of at least 6 characters.", "error")
+        if phone_error:
+            flash(phone_error, "error")
+        elif not name or not email or len(password) < 6:
+            flash("Enter your name, email and a password of at least 6 characters.", "error")
         elif db.session.scalar(select(User).where(User.email == email)):
             flash("An account with that email already exists.", "error")
         elif db.session.scalar(select(User).where(User.phone_number == phone_number)):
             flash("An account with that phone number already exists.", "error")
         else:
-            user = User(name=name, email=email, phone_number=phone_number)
+            user = User(
+                name=name, email=email, phone_number=phone_number,
+                phone_country=phone_country,
+            )
             user.set_password(password)
             db.session.add(user)
             db.session.commit()
@@ -82,7 +86,13 @@ def register():
             if request.form.get("invite_token"):
                 return invitation_redirect()
             return redirect(url_for("main.setup_event"))
-    return render_template("auth/register.html", invite_token=request.form.get("invite_token") or request.args.get("invite", ""))
+    return render_template(
+        "auth/register.html",
+        invite_token=request.form.get("invite_token") or request.args.get("invite", ""),
+        countries=country_options(),
+        selected_country=request.form.get("phone_country", "SZ"),
+        phone_value=request.form.get("phone_number", ""),
+    )
 
 
 @bp.route("/login", methods=["GET", "POST"])
@@ -137,15 +147,20 @@ def setup_event():
 @login_required
 def account_phone():
     if request.method == "POST":
-        phone_number = normalize_phone(request.form.get("phone_number"))
-        if not phone_number.startswith("268") or len(phone_number) != 11:
-            flash("Enter a valid Eswatini mobile number.", "error")
+        phone_country = request.form.get("phone_country", "SZ")
+        try:
+            phone_number, phone_country = normalize_phone(
+                request.form.get("phone_number"), phone_country
+            )
+        except ValueError as error:
+            flash(str(error), "error")
         else:
             existing = db.session.scalar(select(User).where(User.phone_number == phone_number, User.id != current_user.id))
             if existing:
                 flash("That phone number is already linked to another account.", "error")
             else:
                 current_user.phone_number = phone_number
+                current_user.phone_country = phone_country
                 db.session.commit()
                 flash("Phone number saved.", "success")
                 destination = request.form.get("next")
@@ -154,7 +169,13 @@ def account_phone():
                 if destination and destination.startswith("invite:"):
                     return redirect(url_for("billing.accept_invitation", token=destination.split(":", 1)[1]))
                 return redirect(url_for("billing.pricing"))
-    return render_template("auth/phone.html", next_step=request.args.get("next", "pricing"))
+    return render_template(
+        "auth/phone.html",
+        next_step=request.form.get("next") or request.args.get("next", "pricing"),
+        countries=country_options(),
+        selected_country=request.form.get("phone_country", current_user.phone_country or "SZ"),
+        phone_value=request.form.get("phone_number", current_user.phone_display),
+    )
 
 
 @bp.route("/account", methods=["GET", "POST"])
@@ -164,11 +185,22 @@ def account():
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         email = request.form.get("email", "").strip().lower()
-        phone_number = normalize_phone(request.form.get("phone_number"))
+        phone_country = request.form.get("phone_country", current_user.phone_country or "SZ")
+        try:
+            phone_number, phone_country = normalize_phone(
+                request.form.get("phone_number"), phone_country
+            )
+            phone_error = None
+        except ValueError as error:
+            phone_number, phone_error = None, str(error)
         email_owner = db.session.scalar(select(User).where(User.email == email, User.id != current_user.id))
-        phone_owner = db.session.scalar(select(User).where(User.phone_number == phone_number, User.id != current_user.id))
-        if not name or not email or not phone_number.startswith("268") or len(phone_number) != 11:
-            flash("Enter your name, email and a valid Eswatini mobile number.", "error")
+        phone_owner = db.session.scalar(
+            select(User).where(User.phone_number == phone_number, User.id != current_user.id)
+        ) if phone_number else None
+        if phone_error:
+            flash(phone_error, "error")
+        elif not name or not email:
+            flash("Enter your name and email address.", "error")
         elif email_owner:
             flash("That email address is already in use.", "error")
         elif phone_owner:
@@ -177,6 +209,7 @@ def account():
             current_user.name = name
             current_user.email = email
             current_user.phone_number = phone_number
+            current_user.phone_country = phone_country
             db.session.commit()
             flash("Account details updated.", "success")
             return redirect(url_for("main.account"))
@@ -202,6 +235,9 @@ def account():
     return render_template(
         "account.html", event=event, payments=payments,
         membership=membership, access_invitation=access_invitation,
+        countries=country_options(),
+        selected_country=request.form.get("phone_country", current_user.phone_country or "SZ"),
+        phone_value=request.form.get("phone_number", current_user.phone_display),
     )
 
 
@@ -251,6 +287,23 @@ def upload_event_photo():
             previous_path.unlink()
     flash("Your event photo has been updated.", "success")
     return redirect(url_for("main.dashboard"))
+
+
+@bp.get("/event/photo")
+@login_required
+def event_photo():
+    event = current_event()
+    if event is None or not event.profile_image:
+        return ("Not found", 404)
+    relative_path = Path(event.profile_image)
+    if relative_path.is_absolute() or ".." in relative_path.parts:
+        return ("Not found", 404)
+    photo_path = Path(current_app.config["EVENT_PHOTO_FOLDER"]).parent / relative_path
+    if not photo_path.is_file():
+        return ("Not found", 404)
+    response = send_file(photo_path, mimetype="image/jpeg", conditional=True)
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
 
 
 @bp.route("/dashboard")

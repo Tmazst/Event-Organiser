@@ -12,7 +12,8 @@
     <span class="plan-label">Standard</span><h2>E{{ '%.0f'|format(owner_price) }}</h2><p>One-time project upgrade for the event creator.</p>
     <ul><li>Unlimited budget items</li><li>Invite stakeholders to the same event</li><li>No stakeholder invitation limit</li><li>Each stakeholder access: E{{ '%.0f'|format(stakeholder_price) }}</li></ul>
     {% if event and event.owner_id == current_user.id and event.plan_tier == 'free' %}
-      <form method="post" action="{{ url_for('billing.upgrade') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button primary" type="submit"><i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i> Pay E{{ '%.0f'|format(owner_price) }} with MoMo</button></form>
+      {% if payment_country_supported %}<form method="post" action="{{ url_for('billing.upgrade') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button primary" type="submit"><i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i> Pay E{{ owner_price|moneyfmt(0) }} with MoMo</button></form>
+      {% else %}<p class="muted">MoJaPOS payments are not yet available for your selected country.</p>{% endif %}
     {% elif event and event.plan_tier == 'standard' %}<span class="current-plan">Current plan</span>{% endif %}
   </article>
 </section>

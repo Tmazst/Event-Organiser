@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "components/phone_fields.html" import phone_fields %}
 {% block title %}My account · Event Planner{% endblock %}
 {% block content %}
 <section class="page-heading"><p class="eyebrow">Your account</p><h1>Details & plan</h1><p>Keep your contact details ready for MoMo payments and review your event access.</p></section>
@@ -8,7 +9,7 @@
     <h2><i class="fa-solid fa-user-pen" aria-hidden="true"></i> Personal details</h2>
     <label>Full name<input name="name" value="{{ current_user.name }}" required autocomplete="name"></label>
     <label>Email address<input type="email" name="email" value="{{ current_user.email }}" required autocomplete="email"></label>
-    <label>MTN MoMo phone number<input type="tel" name="phone_number" value="{{ current_user.phone_number or '' }}" placeholder="7612 3456" required autocomplete="tel"></label>
+    {{ phone_fields(countries, selected_country, phone_value) }}
     <button class="button primary" type="submit"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save details</button>
   </form>
   <div class="account-sidebar">
@@ -19,7 +20,7 @@
       {% else %}<h2>No event yet</h2><p>Create a event plan to get started.</p>{% endif %}
     </article>
     <article class="card plan-card"><h2><i class="fa-solid fa-receipt" aria-hidden="true"></i> Payments</h2>
-      {% for payment in payments %}<div class="payment-row"><div><strong>{{ payment.kind|replace('_', ' ')|title }}</strong><small>{{ payment.created_at.strftime('%d %b %Y') }}</small></div><div class="payment-amount"><strong>E{{ '%.2f'|format(payment.amount) }}</strong><span class="status status-{{ payment.status }}">{{ payment.status|title }}</span></div></div>{% else %}<p class="muted">No payments recorded yet.</p>{% endfor %}
+      {% for payment in payments %}<div class="payment-row"><div><strong>{{ payment.kind|replace('_', ' ')|title }}</strong><small>{{ payment.created_at.strftime('%d %b %Y') }}</small></div><div class="payment-amount"><strong>E{{ payment.amount|moneyfmt }}</strong><span class="status status-{{ payment.status }}">{{ payment.status|title }}</span></div></div>{% else %}<p class="muted">No payments recorded yet.</p>{% endfor %}
     </article>
   </div>
 </section>

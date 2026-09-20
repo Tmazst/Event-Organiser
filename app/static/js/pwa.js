@@ -56,7 +56,16 @@
   });
 
   if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => navigator.serviceWorker.register("/service-worker.js"));
+    window.addEventListener("load", async () => {
+      try {
+        const registration = await navigator.serviceWorker.register("/service-worker.js", {
+          updateViaCache: "none"
+        });
+        await registration.update();
+      } catch (error) {
+        console.warn("Event Organiser install support is temporarily unavailable.", error);
+      }
+    });
   }
 
   window.setTimeout(() => {

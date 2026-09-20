@@ -21,6 +21,11 @@ def configured_price(key):
     return Decimal(current_app.config[key]).quantize(Decimal("0.01"))
 
 
+def payment_country_supported(user=None):
+    account = user or current_user
+    return account.phone_country in current_app.config["MOJAPOS_SUPPORTED_COUNTRIES"]
+
+
 def create_gateway_payment(*, kind, amount, event, invitation=None):
     existing = db.session.scalar(
         select(Payment).where(
@@ -50,7 +55,7 @@ def create_gateway_payment(*, kind, amount, event, invitation=None):
     result = gateway.service.initiate_payment(
         external_ref_id=payment.external_ref_id,
         amount=payment.amount,
-        phone_number=current_user.phone_number,
+        phone_number=current_user.phone_number.lstrip("+"),
         message="Event Planner access payment",
         note="Event Planner subscription",
     )
@@ -76,6 +81,7 @@ def pricing():
         owner_price=configured_price("OWNER_PLAN_PRICE"),
         stakeholder_price=configured_price("STAKEHOLDER_PRICE"),
         free_limit=current_app.config["FREE_BUDGET_ITEM_LIMIT"],
+        payment_country_supported=payment_country_supported(),
     )
 
 
@@ -91,6 +97,9 @@ def upgrade():
     if not current_user.phone_number:
         flash("Add your MoMo phone number before starting payment.", "info")
         return redirect(url_for("main.account_phone", next="pricing"))
+    if not payment_country_supported():
+        flash("MojaPOS payments are not currently available for your selected country.", "error")
+        return redirect(url_for("billing.pricing"))
     payment = create_gateway_payment(
         kind="owner_upgrade", amount=configured_price("OWNER_PLAN_PRICE"), event=event
     )
@@ -115,6 +124,9 @@ def team():
         if payer == "owner" and not current_user.phone_number:
             flash("Add your MoMo phone number before paying for an invitation.", "info")
             return redirect(url_for("main.account_phone", next="team"))
+        if payer == "owner" and not payment_country_supported():
+            flash("MojaPOS payments are not currently available for your selected country.", "error")
+            return redirect(url_for("billing.team"))
         role = request.form.get("role", "team_member")
         if role not in {"co_organizer", "finance_manager", "vendor_coordinator", "team_member", "viewer"}:
             role = "team_member"
@@ -213,6 +225,9 @@ def join_invitation(token):
     if not current_user.phone_number:
         flash("Add your MoMo phone number before starting payment.", "info")
         return redirect(url_for("main.account_phone", next=f"invite:{token}"))
+    if not payment_country_supported():
+        flash("MojaPOS payments are not currently available for your selected country.", "error")
+        return redirect(url_for("billing.accept_invitation", token=token))
 
     payment = create_gateway_payment(
         kind="invitee_pays_invite",
