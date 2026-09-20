@@ -1,10 +1,15 @@
 from io import BytesIO
+from pathlib import Path
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_RIGHT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+import reportlab
+from reportlab.platypus import Image as ReportImage
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 
@@ -12,6 +17,9 @@ TEAL = colors.HexColor("#176B63")
 INK = colors.HexColor("#1F2933")
 MUTED = colors.HexColor("#66737D")
 PALE = colors.HexColor("#EAF4F2")
+FONT_DIR = Path(reportlab.__file__).parent / "fonts"
+pdfmetrics.registerFont(TTFont("UmcimbySans", str(FONT_DIR / "Vera.ttf")))
+pdfmetrics.registerFont(TTFont("UmcimbySansBold", str(FONT_DIR / "VeraBd.ttf")))
 
 
 def build_event_report(event):
@@ -19,11 +27,14 @@ def build_event_report(event):
     document = SimpleDocTemplate(
         output, pagesize=A4, rightMargin=18 * mm, leftMargin=18 * mm,
         topMargin=18 * mm, bottomMargin=18 * mm,
-        title=f"{event.title} - Event Report",
+        title=f"{event.title} - Umcimby Event Report",
     )
     styles = getSampleStyleSheet()
+    styles["Normal"].fontName = "UmcimbySans"
+    styles["BodyText"].fontName = "UmcimbySans"
+    styles["Heading2"].fontName = "UmcimbySansBold"
     styles.add(ParagraphStyle(name="ReportTitle", parent=styles["Title"], textColor=TEAL,
-                              fontName="Helvetica-Bold", fontSize=24, leading=28, spaceAfter=5 * mm))
+                              fontName="UmcimbySansBold", fontSize=24, leading=28, spaceAfter=5 * mm))
     styles.add(ParagraphStyle(name="Label", parent=styles["Normal"], textColor=MUTED,
                               fontSize=8, leading=10, spaceAfter=1 * mm))
     styles.add(ParagraphStyle(name="RightMoney", parent=styles["Normal"], alignment=TA_RIGHT))
@@ -33,14 +44,18 @@ def build_event_report(event):
     event_date = event.event_date.strftime("%d %B %Y") if event.event_date else "Not set"
     event_type = (event.event_type or "Other").replace("_", " ").title()
 
+    logo_path = Path(__file__).parent / "static" / "images" / "umcimby-logo.png"
     story = [
-        Paragraph("EVENT ORGANISER", styles["Label"]),
+        ReportImage(str(logo_path), width=58 * mm, height=20 * mm),
+        Spacer(1, 4 * mm),
         Paragraph(event.title, styles["ReportTitle"]),
         Table([
             [Paragraph("EVENT TYPE", styles["Label"]), Paragraph("DATE", styles["Label"]), Paragraph("LOCATION", styles["Label"])],
             [event_type, event_date, event.location or "Not set"],
         ], colWidths=[55 * mm, 55 * mm, 46 * mm], style=TableStyle([
             ("BACKGROUND", (0, 0), (-1, -1), PALE), ("TEXTCOLOR", (0, 1), (-1, -1), INK),
+            ("FONTNAME", (0, 0), (-1, -1), "UmcimbySans"),
+            ("FONTSIZE", (0, 0), (-1, 0), 7), ("FONTSIZE", (0, 1), (-1, -1), 9),
             ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#CFE3DF")),
             ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CFE3DF")),
             ("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 8),
@@ -59,7 +74,8 @@ def build_event_report(event):
             [f"E{event.budget_target:,.2f}", f"E{selected_total:,.2f}", f"E{abs(remaining):,.2f}"],
         ], colWidths=[52 * mm] * 3, style=TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), TEAL), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("FONTNAME", (0, 0), (-1, -1), "Helvetica-Bold"), ("FONTSIZE", (0, 1), (-1, 1), 13),
+            ("FONTNAME", (0, 0), (-1, -1), "UmcimbySansBold"),
+            ("FONTSIZE", (0, 0), (-1, 0), 8), ("FONTSIZE", (0, 1), (-1, 1), 12),
             ("ALIGN", (0, 0), (-1, -1), "CENTER"), ("BOX", (0, 0), (-1, -1), 0.5, TEAL),
             ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CFE3DF")),
             ("TOPPADDING", (0, 0), (-1, -1), 8), ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
@@ -78,9 +94,11 @@ def build_event_report(event):
         ])
     if len(rows) == 1:
         rows.append(["No budget items added", "-", "-", "-"])
-    story.append(Table(rows, repeatRows=1, colWidths=[48 * mm, 32 * mm, 48 * mm, 32 * mm], style=TableStyle([
+    story.append(Table(rows, repeatRows=1, colWidths=[46 * mm, 30 * mm, 52 * mm, 32 * mm], style=TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), INK), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"), ("ALIGN", (1, 1), (1, -1), "RIGHT"),
+        ("FONTNAME", (0, 0), (-1, -1), "UmcimbySans"),
+        ("FONTNAME", (0, 0), (-1, 0), "UmcimbySansBold"), ("ALIGN", (1, 1), (1, -1), "RIGHT"),
+        ("FONTSIZE", (0, 0), (-1, 0), 8), ("FONTSIZE", (0, 1), (-1, -1), 8.5),
         ("ALIGN", (3, 1), (3, -1), "RIGHT"), ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, PALE]),
         ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#D8E1E4")),
         ("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 6),
@@ -92,9 +110,9 @@ def build_event_report(event):
         canvas.saveState()
         canvas.setStrokeColor(colors.HexColor("#D8E1E4"))
         canvas.line(18 * mm, 13 * mm, 192 * mm, 13 * mm)
-        canvas.setFont("Helvetica", 8)
+        canvas.setFont("UmcimbySans", 8)
         canvas.setFillColor(MUTED)
-        canvas.drawString(18 * mm, 8 * mm, "Generated by Event Organiser")
+        canvas.drawString(18 * mm, 8 * mm, "Generated by Umcimby Event Planner")
         canvas.drawRightString(192 * mm, 8 * mm, f"Page {doc.page}")
         canvas.restoreState()
 

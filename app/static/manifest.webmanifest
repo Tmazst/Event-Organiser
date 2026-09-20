@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "Event Organiser",
-  "short_name": "Event Organiser",
+  "name": "Umcimby Event Planner",
+  "short_name": "Umcimby",
   "description": "Plan your event budget, compare quotations and collaborate with your event team.",
   "start_url": "/",
   "scope": "/",

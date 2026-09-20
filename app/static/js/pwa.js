@@ -63,7 +63,7 @@
         });
         await registration.update();
       } catch (error) {
-        console.warn("Event Organiser install support is temporarily unavailable.", error);
+        console.warn("Umcimby install support is temporarily unavailable.", error);
       }
     });
   }

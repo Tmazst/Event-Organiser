@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ event.title }} report · Umcimby{% endblock %}
+{% block content %}
+<section class="page-heading heading-row report-heading">
+  <div><p class="eyebrow">Event report</p><h1>Preview your report</h1><p>Review the document below before downloading it.</p></div>
+  <div class="button-row report-actions">
+    <a class="button secondary" href="{{ url_for('main.event_report_pdf') }}" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i> Open full preview</a>
+    <a class="button primary" href="{{ url_for('main.download_event_report') }}" download data-no-loader><i class="fa-solid fa-file-arrow-down" aria-hidden="true"></i> Download PDF</a>
+  </div>
+</section>
+<section class="card pdf-preview-card">
+  <object class="pdf-preview" data="{{ url_for('main.event_report_pdf') }}" type="application/pdf" aria-label="Preview of {{ event.title }} report">
+    <div class="pdf-preview-fallback"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i><h2>Preview unavailable in this browser</h2><p>Open the report in a new tab or download it to view the document.</p><a class="button secondary" href="{{ url_for('main.event_report_pdf') }}" target="_blank" rel="noopener">Open PDF preview</a></div>
+  </object>
+</section>
+{% endblock %}

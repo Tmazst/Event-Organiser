@@ -19,7 +19,7 @@ def create_app(config_class=Config):
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     if not app.config.get("TESTING") and app.config["SECRET_KEY"] == "dev-change-me":
-        raise RuntimeError("Set a strong SECRET_KEY before starting Event Organiser.")
+        raise RuntimeError("Set a strong SECRET_KEY before starting Umcimby.")
 
     Path(app.instance_path).mkdir(parents=True, exist_ok=True)
 
@@ -107,16 +107,18 @@ def create_app(config_class=Config):
         if response.mimetype == "text/html":
             response.headers["Cache-Control"] = "private, no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
+        report_preview = request.endpoint == "main.event_report_pdf"
+        response.headers["X-Frame-Options"] = "SAMEORIGIN" if report_preview else "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        frame_ancestors = "'self'" if report_preview else "'none'"
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "script-src 'self'; "
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
             "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; "
             "img-src 'self' data:; connect-src 'self' https:; "
-            "frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+            f"frame-ancestors {frame_ancestors}; base-uri 'self'; form-action 'self'"
         )
         if request.is_secure:
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
