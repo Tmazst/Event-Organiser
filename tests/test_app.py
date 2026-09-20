@@ -1,4 +1,5 @@
 from io import BytesIO
+import re
 
 import pytest
 from PIL import Image
@@ -28,6 +29,7 @@ def app(monkeypatch, tmp_path):
     monkeypatch.setenv("MOJAPOS_MOCK_MODE", "true")
     application = create_app(TestConfig)
     application.config["EVENT_PHOTO_FOLDER"] = tmp_path / "uploads" / "events"
+    application.config["LEGACY_EVENT_PHOTO_FOLDER"] = tmp_path / "public" / "events"
     with application.app_context():
         db.create_all()
     return application
@@ -172,6 +174,9 @@ def test_pwa_files_are_public(client):
     assert worker.status_code == 200
     assert worker.headers["Service-Worker-Allowed"] == "/"
     assert b"event-organiser-static-v2" in worker.data
+    assert b'request.mode === "navigate"' in worker.data
+    assert b"/static/css/app.css" not in worker.data
+    assert b'if (request.method !== "GET"' in worker.data
 
     offline = client.get("/offline")
     assert offline.status_code == 200
@@ -242,3 +247,39 @@ def test_browser_security_headers_and_private_html(client):
     assert response.headers["X-Content-Type-Options"] == "nosniff"
     assert response.headers["X-Frame-Options"] == "DENY"
     assert "frame-ancestors 'none'" in response.headers["Content-Security-Policy"]
+
+
+def test_expired_csrf_token_has_recovery_page(tmp_path, monkeypatch):
+    class CsrfTestConfig(TestConfig):
+        CSRF_PROTECT = True
+
+    monkeypatch.setenv("MOJAPOS_MOCK_MODE", "true")
+    application = create_app(CsrfTestConfig)
+    application.config["EVENT_PHOTO_FOLDER"] = tmp_path / "uploads" / "events"
+    with application.app_context():
+        db.create_all()
+    csrf_client = application.test_client()
+    page = csrf_client.get("/login")
+    token = re.search(rb'name="csrf_token" value="([^"]+)"', page.data).group(1).decode()
+    response = csrf_client.post("/login", data={
+        "email": "nobody@example.com", "password": "secret1",
+        "csrf_token": f"stale-{token}",
+    })
+    assert response.status_code == 400
+    assert b"form expired" in response.data.lower()
+    assert response.headers["Cache-Control"] == "private, no-store"
+
+
+def test_legacy_photos_move_only_when_command_runs(app):
+    legacy = app.config["LEGACY_EVENT_PHOTO_FOLDER"] / "1" / "old.jpg"
+    legacy.parent.mkdir(parents=True)
+    legacy.write_bytes(b"legacy-photo")
+    destination = app.config["EVENT_PHOTO_FOLDER"] / "1" / "old.jpg"
+
+    assert legacy.is_file()
+    assert not destination.exists()
+    result = app.test_cli_runner().invoke(args=["migrate-event-photos"])
+    assert result.exit_code == 0
+    assert "Migrated 1 event photo." in result.output
+    assert not legacy.exists()
+    assert destination.read_bytes() == b"legacy-photo"

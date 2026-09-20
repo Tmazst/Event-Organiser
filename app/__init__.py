@@ -5,6 +5,7 @@ import hmac
 import secrets
 import shutil
 
+import click
 from flask import Flask, abort, render_template, request, send_from_directory, session
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -22,22 +23,6 @@ def create_app(config_class=Config):
 
     Path(app.instance_path).mkdir(parents=True, exist_ok=True)
 
-    legacy_photos = app.config.get("LEGACY_EVENT_PHOTO_FOLDER")
-    private_photos = app.config.get("EVENT_PHOTO_FOLDER")
-    if legacy_photos and private_photos:
-        legacy_photos = Path(legacy_photos)
-        private_photos = Path(private_photos)
-        if legacy_photos.exists():
-            for old_file in legacy_photos.rglob("*"):
-                if not old_file.is_file() or old_file.name == ".gitkeep":
-                    continue
-                destination = private_photos / old_file.relative_to(legacy_photos)
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                if destination.exists():
-                    old_file.unlink()
-                else:
-                    shutil.move(str(old_file), str(destination))
-
     css_path = Path(app.static_folder) / "css" / "app.css"
     app.config["APP_CSS_VERSION"] = str(int(css_path.stat().st_mtime)) if css_path.exists() else "1"
 
@@ -48,6 +33,25 @@ def create_app(config_class=Config):
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
+
+    @app.cli.command("migrate-event-photos")
+    def migrate_event_photos():
+        """Move legacy public event photos into authenticated storage."""
+        legacy_photos = Path(app.config["LEGACY_EVENT_PHOTO_FOLDER"])
+        private_photos = Path(app.config["EVENT_PHOTO_FOLDER"])
+        moved = 0
+        if legacy_photos.exists():
+            for old_file in legacy_photos.rglob("*"):
+                if not old_file.is_file() or old_file.name == ".gitkeep":
+                    continue
+                destination = private_photos / old_file.relative_to(legacy_photos)
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                if destination.exists():
+                    old_file.unlink()
+                else:
+                    shutil.move(str(old_file), str(destination))
+                moved += 1
+        click.echo(f"Migrated {moved} event photo{'s' if moved != 1 else ''}.")
 
     @app.get("/manifest.webmanifest")
     def web_manifest():

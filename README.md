@@ -34,12 +34,29 @@ Windows:
 .venv\Scripts\activate
 pip install -r requirements-dev.txt
 copy .env.example .env
+# In .env, use SESSION_COOKIE_SECURE=false for local HTTP development only.
 flask --app run db upgrade
 pytest -q
 flask --app run run --debug
 ```
 
 Open `http://127.0.0.1:5000`.
+
+Keep `SESSION_COOKIE_SECURE=true` in production, where the application is served
+over HTTPS.
+
+## Upgrading an existing installation
+
+Back up the database and uploaded photos, then run:
+
+```bash
+flask --app run db upgrade
+flask --app run migrate-event-photos
+```
+
+The second command moves existing event photos out of the public static folder
+and into authenticated storage. Run it once before restarting Gunicorn. It is
+safe to rerun if an interrupted deployment needs to be resumed.
 
 ## First database migration
 
