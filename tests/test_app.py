@@ -167,7 +167,8 @@ def test_pwa_files_are_public(client):
     manifest = client.get("/manifest.webmanifest")
     assert manifest.status_code == 200
     assert manifest.mimetype == "application/manifest+json"
-    assert manifest.json["name"] == "Event Organiser"
+    assert manifest.json["name"] == "Umcimby Event Planner"
+    assert manifest.json["short_name"] == "Umcimby"
     assert manifest.json["display"] == "standalone"
 
     worker = client.get("/service-worker.js")
@@ -183,16 +184,33 @@ def test_pwa_files_are_public(client):
     assert b"offline" in offline.data
 
 
-def test_event_report_downloads_pdf(client):
+def test_event_report_previews_then_downloads_pdf(client):
     create_owner_event(client)
     client.post("/budget", data={"name": "Venue", "planned_amount": "12000"})
     client.post("/budget/1/quotes", data={"vendor_name": "Mavuso Centre", "amount": "11500"})
     client.post("/quotes/1/select")
-    response = client.get("/report")
-    assert response.status_code == 200
-    assert response.mimetype == "application/pdf"
-    assert response.data.startswith(b"%PDF")
-    assert "manzini-business-expo-report.pdf" in response.headers["Content-Disposition"]
+    preview_page = client.get("/report")
+    assert preview_page.status_code == 200
+    assert preview_page.mimetype == "text/html"
+    assert b"Preview your report" in preview_page.data
+    assert b"Download PDF" in preview_page.data
+    assert b"/report/preview.pdf" in preview_page.data
+
+    inline = client.get("/report/preview.pdf")
+    assert inline.status_code == 200
+    assert inline.mimetype == "application/pdf"
+    assert inline.data.startswith(b"%PDF")
+    assert inline.headers["Cache-Control"] == "private, no-store"
+    assert inline.headers["X-Frame-Options"] == "SAMEORIGIN"
+    assert "frame-ancestors 'self'" in inline.headers["Content-Security-Policy"]
+    assert "inline" in inline.headers["Content-Disposition"]
+
+    download = client.get("/report/download")
+    assert download.status_code == 200
+    assert download.mimetype == "application/pdf"
+    assert download.data.startswith(b"%PDF")
+    assert "attachment" in download.headers["Content-Disposition"]
+    assert "manzini-business-expo-report.pdf" in download.headers["Content-Disposition"]
 
 
 def test_international_phone_is_stored_in_e164(app, client):

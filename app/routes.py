@@ -330,12 +330,40 @@ def event_report():
     event = current_event()
     if event is None:
         return redirect(url_for("main.setup_event"))
+    return render_template("reports/preview.html", event=event)
+
+
+def event_report_response(event, *, download):
     from .reports import build_event_report
 
     report = build_event_report(event)
     safe_name = "".join(c if c.isalnum() else "-" for c in event.title).strip("-").lower()
-    return send_file(report, mimetype="application/pdf", as_attachment=True,
-                     download_name=f"{safe_name or 'event'}-report.pdf")
+    response = send_file(
+        report,
+        mimetype="application/pdf",
+        as_attachment=download,
+        download_name=f"{safe_name or 'event'}-report.pdf",
+    )
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
+
+
+@bp.get("/report/preview.pdf")
+@login_required
+def event_report_pdf():
+    event = current_event()
+    if event is None:
+        return redirect(url_for("main.setup_event"))
+    return event_report_response(event, download=False)
+
+
+@bp.get("/report/download")
+@login_required
+def download_event_report():
+    event = current_event()
+    if event is None:
+        return redirect(url_for("main.setup_event"))
+    return event_report_response(event, download=True)
 
 
 @bp.route("/budget", methods=["GET", "POST"])

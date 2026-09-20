@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#176b63">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Event Organiser">
-  <title>{% block title %}Event Planner{% endblock %}</title>
+  <meta name="apple-mobile-web-app-title" content="Umcimby">
+  <title>{% block title %}Umcimby · Event Planner{% endblock %}</title>
   <link rel="manifest" href="{{ url_for('web_manifest') }}">
   <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='icons/icon-192.png') }}">
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
@@ -19,7 +19,7 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand brand-wordmark" href="{{ url_for('main.dashboard') if current_user.is_authenticated else url_for('main.login') }}" aria-label="Event Organiser home"><i class="fa-regular fa-calendar-check" aria-hidden="true"></i><span>Event Organiser</span></a>
+    <a class="brand brand-wordmark" href="{{ url_for('main.dashboard') if current_user.is_authenticated else url_for('main.login') }}" aria-label="Umcimby Event Planner home"><img src="{{ url_for('static', filename='images/umcimby-logo.png') }}" alt="Umcimby Event Planner"></a>
     {% if current_user.is_authenticated %}
       <nav aria-label="Main navigation">
         <a href="{{ url_for('main.dashboard') }}"><i class="fa-solid fa-house" aria-hidden="true"></i> Overview</a>
@@ -38,7 +38,7 @@
     {% block content %}{% endblock %}
   </main>
   <footer class="footer">
-    <p>© {{ current_year }} Event Organiser. All rights reserved.</p>
+    <p>© {{ current_year }} Umcimby Event Planner. All rights reserved.</p>
     <p>Powered by TechX</p>
   </footer>
   <div class="page-loader" id="page-loader" role="status" aria-live="polite" aria-label="Loading" hidden>
@@ -47,7 +47,7 @@
   <aside class="install-prompt" id="install-prompt" role="dialog" aria-labelledby="install-title" aria-describedby="install-description" hidden>
     <button class="install-close" id="install-close" type="button" aria-label="Close install prompt"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
     <img src="{{ url_for('static', filename='icons/icon-192.png') }}" alt="" aria-hidden="true">
-    <div><strong id="install-title">Keep Event Organiser close</strong><p id="install-description">Install the app for quick access to your event plan.</p><p class="ios-install-help" id="ios-install-help" hidden>Tap <i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i> Share, then choose <strong>Add to Home Screen</strong>.</p></div>
+    <div><strong id="install-title">Keep Umcimby close</strong><p id="install-description">Install the Event Planner for quick access to your event plan.</p><p class="ios-install-help" id="ios-install-help" hidden>Tap <i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i> Share, then choose <strong>Add to Home Screen</strong>.</p></div>
     <button class="button primary" id="install-button" type="button"><i class="fa-solid fa-download" aria-hidden="true"></i> Install app</button>
   </aside>
   <script src="{{ url_for('static', filename='js/pwa.js') }}" defer></script>

@@ -1,6 +1,6 @@
-# Event Organiser
+# Umcimby — Event Planner
 
-A simple event-planning web app for Eswatini organizers. The focused MVP lets a user set up an event, build a budget, compare vendor quotations, collaborate with a planning team and export a clear PDF report.
+A simple event-planning web app for Eswatini organizers. The focused MVP lets a user set up an event, build a budget, compare vendor quotations, collaborate with a planning team and preview or download a clear PDF report.
 
 ## Current MVP
 
@@ -18,7 +18,7 @@ A simple event-planning web app for Eswatini organizers. The focused MVP lets a 
 - Event profile photo with a friendly placeholder
 - Account details, active plan and payment history
 - Font Awesome-enhanced navigation and actions
-- Installable Event Organiser PWA with branded app icons and an offline fallback
+- Installable Umcimby PWA with branded app icons and an offline fallback
 - Responsive, simple interface
 - Downloadable event report with budget and selected quotation details
 

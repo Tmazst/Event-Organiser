@@ -56,8 +56,8 @@ def create_gateway_payment(*, kind, amount, event, invitation=None):
         external_ref_id=payment.external_ref_id,
         amount=payment.amount,
         phone_number=current_user.phone_number.lstrip("+"),
-        message="Event Planner access payment",
-        note="Event Planner subscription",
+        message="Umcimby Event Planner access payment",
+        note="Umcimby Event Planner subscription",
     )
     if not result.get("success"):
         payment.status = "failed"
