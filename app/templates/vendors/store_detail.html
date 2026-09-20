@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ store.store_name }} · Vendors · Umcimby{% endblock %}
+{% block content %}
+<section class="page-heading store-profile"><a class="back-link" href="{{ url_for('vendors.directory') }}">← Vendor directory</a><p class="eyebrow">Vendor store</p><h1>{{ store.store_name }}</h1><p>{{ store.offering_summary }}</p><div class="store-contact"><span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ store.location }}</span><a href="tel:{{ store.contact_phone }}"><i class="fa-solid fa-phone" aria-hidden="true"></i> {{ store.contact_phone }}</a>{% if store.contact_email %}<a href="mailto:{{ store.contact_email }}"><i class="fa-solid fa-envelope" aria-hidden="true"></i> {{ store.contact_email }}</a>{% endif %}</div></section>
+<section class="catalogue-grid">
+  {% for product in store.products %}<article class="card catalogue-card"><p class="eyebrow">Product or service</p><h2>{{ product.name }}</h2>{% if product.description %}<p>{{ product.description }}</p>{% endif %}<div class="catalogue-price">{% if product.publish_price and product.price is not none %}<strong>E{{ product.price|moneyfmt }}</strong>{% if product.price_unit %}<span>{{ product.price_unit }}</span>{% endif %}{% else %}<strong>Contact vendor for price</strong>{% endif %}</div></article>
+  {% else %}<div class="card empty vendor-empty"><p>This vendor has not listed any products yet.</p></div>{% endfor %}
+</section>
+{% endblock %}

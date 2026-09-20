@@ -12,10 +12,14 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     phone_number = db.Column(db.String(20), unique=True, nullable=True, index=True)
     phone_country = db.Column(db.String(2), default="SZ", nullable=False, index=True)
+    account_type = db.Column(db.String(20), default="organizer", nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     events = db.relationship("Event", backref="owner", lazy=True, cascade="all, delete-orphan")
     memberships = db.relationship("EventMember", backref="user", lazy=True, cascade="all, delete-orphan")
+    vendor_store = db.relationship(
+        "VendorStore", backref="owner", uselist=False, cascade="all, delete-orphan"
+    )
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -51,6 +55,31 @@ class Event(db.Model):
     @property
     def estimated_total(self):
         return sum((category.selected_amount for category in self.categories), start=0)
+
+
+class VendorStore(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    store_name = db.Column(db.String(160), nullable=False, index=True)
+    contact_phone = db.Column(db.String(40), nullable=False)
+    contact_email = db.Column(db.String(255), nullable=True)
+    location = db.Column(db.String(160), nullable=False, index=True)
+    offering_summary = db.Column(db.Text, nullable=False)
+    owner_id = db.Column(db.Integer, db.ForeignKey("user.id"), unique=True, nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    products = db.relationship(
+        "VendorProduct", backref="store", lazy=True, cascade="all, delete-orphan"
+    )
+
+
+class VendorProduct(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(160), nullable=False, index=True)
+    description = db.Column(db.Text, nullable=True)
+    price = db.Column(db.Numeric(12, 2), nullable=True)
+    price_unit = db.Column(db.String(60), nullable=True)
+    publish_price = db.Column(db.Boolean, default=False, nullable=False)
+    store_id = db.Column(db.Integer, db.ForeignKey("vendor_store.id"), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
 
 class BudgetCategory(db.Model):

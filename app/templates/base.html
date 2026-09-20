@@ -19,13 +19,18 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand brand-wordmark" href="{{ url_for('main.dashboard') if current_user.is_authenticated else url_for('main.login') }}" aria-label="Umcimby Event Planner home"><img src="{{ url_for('static', filename='images/umcimby-logo.png') }}" alt="Umcimby Event Planner"></a>
+    <a class="brand brand-wordmark" href="{{ url_for('vendors.dashboard') if current_user.is_authenticated and current_user.account_type == 'vendor' else url_for('main.dashboard') if current_user.is_authenticated else url_for('main.login') }}" aria-label="Umcimby Event Planner home"><img src="{{ url_for('static', filename='images/umcimby-logo.png') }}" alt="Umcimby Event Planner"></a>
     {% if current_user.is_authenticated %}
       <nav aria-label="Main navigation">
-        <a href="{{ url_for('main.dashboard') }}"><i class="fa-solid fa-house" aria-hidden="true"></i> Overview</a>
-        <a href="{{ url_for('main.budget') }}"><i class="fa-solid fa-wallet" aria-hidden="true"></i> Budget</a>
-        <a href="{{ url_for('main.event_report') }}"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Report</a>
-        <a href="{{ url_for('billing.pricing') }}"><i class="fa-solid fa-gem" aria-hidden="true"></i> Pricing</a>
+        {% if current_user.account_type == 'vendor' %}
+          <a href="{{ url_for('vendors.dashboard') }}"><i class="fa-solid fa-store" aria-hidden="true"></i> My store</a>
+        {% else %}
+          <a href="{{ url_for('main.dashboard') }}"><i class="fa-solid fa-house" aria-hidden="true"></i> Overview</a>
+          <a href="{{ url_for('main.budget') }}"><i class="fa-solid fa-wallet" aria-hidden="true"></i> Budget</a>
+          <a href="{{ url_for('main.event_report') }}"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Report</a>
+          <a href="{{ url_for('billing.pricing') }}"><i class="fa-solid fa-gem" aria-hidden="true"></i> Pricing</a>
+        {% endif %}
+        <a href="{{ url_for('vendors.directory') }}"><i class="fa-solid fa-store" aria-hidden="true"></i> Vendors</a>
         <a href="{{ url_for('main.account') }}"><i class="fa-solid fa-circle-user" aria-hidden="true"></i> Account</a>
         <form action="{{ url_for('main.logout') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="link-button"><i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i> Log out</button></form>
       </nav>

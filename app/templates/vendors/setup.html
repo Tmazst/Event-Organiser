@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Set up your store · Umcimby{% endblock %}
+{% block content %}
+<div class="narrow">
+  <div class="page-heading"><p class="eyebrow">Vendor store</p><h1>Set up your store</h1><p>Add the basic details organizers need to find and contact your business.</p></div>
+  <form class="card form-card two-column" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="full">Store or business name<input name="store_name" value="{{ request.form.get('store_name', store.store_name if store else '') }}" placeholder="e.g. Manzini Event Hire" required></label>
+    <label>Contact phone<input type="tel" name="contact_phone" value="{{ request.form.get('contact_phone', store.contact_phone if store else current_user.phone_display) }}" required></label>
+    <label>Contact email<input type="email" name="contact_email" value="{{ request.form.get('contact_email', store.contact_email if store and store.contact_email else current_user.email) }}"></label>
+    <label class="full">Location<input name="location" value="{{ request.form.get('location', store.location if store else '') }}" placeholder="e.g. Matsapha, Manzini" required></label>
+    <label class="full">What do you supply?<textarea name="offering_summary" rows="4" placeholder="e.g. Event tents, chairs, tables and decorations" required>{{ request.form.get('offering_summary', store.offering_summary if store else '') }}</textarea></label>
+    <button class="button primary full" type="submit"><i class="fa-solid fa-arrow-right" aria-hidden="true"></i> Save and continue</button>
+  </form>
+</div>
+{% endblock %}
