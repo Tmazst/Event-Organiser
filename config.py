@@ -8,6 +8,10 @@ BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
 
 
+def env_bool(name, default=False):
+    return os.getenv(name, str(default)).lower() in {"1", "true", "yes", "on"}
+
+
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-change-me")
     SESSION_COOKIE_NAME = os.getenv("SESSION_COOKIE_NAME", "event_organiser_session_v2")
@@ -28,6 +32,13 @@ class Config:
     FREE_BUDGET_ITEM_LIMIT = int(os.getenv("FREE_BUDGET_ITEM_LIMIT", "4"))
     OWNER_PLAN_PRICE = os.getenv("OWNER_PLAN_PRICE", "40.00")
     STAKEHOLDER_PRICE = os.getenv("STAKEHOLDER_PRICE", "30.00")
+
+    # Shared vendor service. Disabled by default so it can be deployed safely.
+    VENDOR_FEATURE_ENABLED = env_bool("VENDOR_FEATURE_ENABLED", False)
+    VENDOR_STORE_MANAGEMENT_ENABLED = env_bool("VENDOR_STORE_MANAGEMENT_ENABLED", True)
+    VENDOR_API_ENABLED = env_bool("VENDOR_API_ENABLED", False)
+    VENDOR_API_KEY = os.getenv("VENDOR_API_KEY") or None
+
     PAYMENT_CURRENCY = os.getenv("MOJAPOS_CURRENCY", "SZL")
     MOJAPOS_SUPPORTED_COUNTRIES = tuple(
         country.strip().upper()
