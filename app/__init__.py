@@ -139,6 +139,9 @@ def create_app(config_class=Config):
     from .vendors import bp as vendors_bp
     app.register_blueprint(vendors_bp)
 
+    from .vendor_api import bp as vendor_api_bp
+    app.register_blueprint(vendor_api_bp)
+
     from .payment_gateway import build_gateway
     build_gateway().init_app(app)
 

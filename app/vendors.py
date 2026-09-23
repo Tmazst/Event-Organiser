@@ -1,6 +1,6 @@
 from decimal import Decimal, InvalidOperation
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import or_, select
 
@@ -11,6 +11,16 @@ from .models import VendorProduct, VendorStore
 bp = Blueprint("vendors", __name__)
 
 
+def _vendor_feature_enabled():
+    return current_app.config.get("VENDOR_FEATURE_ENABLED", False)
+
+
+def _store_management_enabled():
+    return _vendor_feature_enabled() and current_app.config.get(
+        "VENDOR_STORE_MANAGEMENT_ENABLED", False
+    )
+
+
 def owned_store():
     return db.session.scalar(select(VendorStore).where(VendorStore.owner_id == current_user.id))
 
@@ -18,7 +28,7 @@ def owned_store():
 @bp.route("/vendor/setup", methods=["GET", "POST"])
 @login_required
 def setup_store():
-    if current_user.account_type != "vendor":
+    if not _store_management_enabled() or current_user.account_type != "vendor":
         return ("Not found", 404)
     store = owned_store()
     if request.method == "POST":
@@ -46,8 +56,12 @@ def setup_store():
 @bp.get("/vendor")
 @login_required
 def dashboard():
+    if not _vendor_feature_enabled():
+        return ("Not found", 404)
     if current_user.account_type != "vendor":
         return redirect(url_for("vendors.directory"))
+    if not _store_management_enabled():
+        return ("Not found", 404)
     store = owned_store()
     if store is None:
         return redirect(url_for("vendors.setup_store"))
@@ -57,7 +71,7 @@ def dashboard():
 @bp.post("/vendor/products")
 @login_required
 def add_product():
-    if current_user.account_type != "vendor":
+    if not _store_management_enabled() or current_user.account_type != "vendor":
         return ("Not found", 404)
     store = owned_store()
     if store is None:
@@ -101,6 +115,8 @@ def add_product():
 @bp.post("/vendor/products/<int:product_id>/delete")
 @login_required
 def delete_product(product_id):
+    if not _store_management_enabled():
+        return ("Not found", 404)
     product = db.get_or_404(VendorProduct, product_id)
     if product.store.owner_id != current_user.id:
         return ("Not found", 404)
@@ -113,6 +129,8 @@ def delete_product(product_id):
 @bp.get("/vendors")
 @login_required
 def directory():
+    if not _vendor_feature_enabled():
+        return ("Not found", 404)
     query = request.args.get("q", "").strip()
     statement = select(VendorStore).outerjoin(VendorProduct)
     if query:
@@ -133,5 +151,7 @@ def directory():
 @bp.get("/vendors/<int:store_id>")
 @login_required
 def store_detail(store_id):
+    if not _vendor_feature_enabled():
+        return ("Not found", 404)
     store = db.get_or_404(VendorStore, store_id)
     return render_template("vendors/store_detail.html", store=store)
