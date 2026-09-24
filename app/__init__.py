@@ -88,7 +88,10 @@ def create_app(config_class=Config):
     def csrf_protect():
         if not app.config.get("CSRF_PROTECT", True) or request.method != "POST":
             return None
-        if request.endpoint == "mojapos_payments.mojapos_callback":
+        # Browser forms use session CSRF tokens. The vendor API is a
+        # server-to-server JSON API and authenticates with X-Vendor-API-Key,
+        # so it must not be blocked by browser-form CSRF validation.
+        if request.endpoint == "mojapos_payments.mojapos_callback" or request.blueprint == "vendor_api":
             return None
         expected = session.get("csrf_token", "")
         supplied = request.form.get("csrf_token", "")
