@@ -154,3 +154,16 @@ class Payment(db.Model):
     user = db.relationship("User", foreign_keys=[user_id])
     event = db.relationship("Event", foreign_keys=[event_id])
     invitation = db.relationship("Invitation", foreign_keys=[invitation_id])
+
+
+class SharedLoginUse(db.Model):
+    """Consumed shared-login tokens, stored as hashes to block replay."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    token_hash = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    consumed_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        index=True,
+    )
