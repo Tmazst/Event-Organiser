@@ -85,8 +85,9 @@ def test_valid_handoff_logs_in_existing_vendor_once(app, client):
     with app.app_context():
         assert db.session.query(SharedLoginUse).count() == 1
 
-    second = client.get(f"/shared-login/from-umshado?token={token}", follow_redirects=True)
-    assert b"already been used" in second.data
+    second = client.get(f"/shared-login/from-umshado?token={token}")
+    assert second.status_code == 302
+    assert second.headers["Location"].endswith("/login")
 
 
 def test_tampered_handoff_is_rejected(app, client):
