@@ -142,6 +142,9 @@ def create_app(config_class=Config):
     from .vendor_api import bp as vendor_api_bp
     app.register_blueprint(vendor_api_bp)
 
+    from .shared_login import bp as shared_login_bp
+    app.register_blueprint(shared_login_bp)
+
     from .payment_gateway import build_gateway
     build_gateway().init_app(app)
 
