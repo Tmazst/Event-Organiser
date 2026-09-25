@@ -37,8 +37,10 @@ def _remote_origin():
 
 
 def _remote_lookup(email, phone_number):
-    if not _enabled() or not _api_key():
+    if not _enabled():
         return None
+    if not _api_key():
+        raise RuntimeError("Shared account API key is not configured.")
     response = requests.post(
         f"{_remote_origin()}/shared-accounts/api/lookup",
         json={"email": email, "phone_number": phone_number},
@@ -87,6 +89,7 @@ def lookup():
         "name": user.name,
         "email": user.email,
         "phone_number": user.phone_number,
+        "phone_country": user.phone_country,
         "account_type": user.account_type,
     })
 
@@ -122,13 +125,20 @@ def register():
     if db.session.scalar(select(User).where(User.phone_number == phone_number)):
         return _register_page("An Umcimby account with that phone number already exists. Please log in.", "error", 409)
 
-    if not invite_token:
+    if not invite_token and _enabled():
         try:
             remote = _remote_lookup(email, phone_number)
         except (requests.RequestException, RuntimeError, ValueError):
-            remote = None
+            return _register_page(
+                "We could not check your UMSHADO account right now. Please try again before creating a new account.",
+                "error",
+                503,
+            )
         if remote and remote.get("exists"):
-            query = urlencode({"account_type": account_type})
+            query = urlencode({
+                "account_type": account_type,
+                "identity": remote.get("email") or email,
+            })
             continue_url = f"{_remote_origin()}/shared-login/continue-to-umcimby?{query}"
             return _register_page(
                 "You already have an UMSHADO account. Sign in there once and we can create your Umcimby account from it.",
