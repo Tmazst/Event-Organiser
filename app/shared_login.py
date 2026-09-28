@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 
 from .extensions import db
 from .models import SharedLoginUse, User
+from .shared_identity import linked_user, stage_identity_link
 
 
 bp = Blueprint("shared_login", __name__, url_prefix="/shared-login")
@@ -36,6 +37,7 @@ def _umshado_origin():
 
 def _identity_payload(user, *, provision=False):
     payload = {
+        "source_user_id": str(user.id),
         "email": user.email,
         "phone_number": user.phone_number,
         "phone_country": user.phone_country,
@@ -50,6 +52,12 @@ def _identity_payload(user, *, provision=False):
 
 
 def _matching_user(payload):
+    source_user_id = payload.get("source_user_id")
+    if source_user_id:
+        user = linked_user("umshado", source_user_id)
+        if user is not None:
+            return user, False
+
     email = (payload.get("email") or "").strip().lower()
     phone = (payload.get("phone_number") or "").strip()
     email_user = db.session.scalar(select(User).where(User.email == email)) if email else None
@@ -193,10 +201,15 @@ def from_umshado():
         )
         user.set_password(secrets.token_urlsafe(32))
         db.session.add(user)
-        db.session.commit()
+        db.session.flush()
     elif user is None:
         flash("No Umcimby account was found for this UMSHADO account. Please register first.", "info")
         return redirect(url_for("main.register"))
+
+    if not stage_identity_link(user, "umshado", payload.get("source_user_id")):
+        db.session.rollback()
+        flash("This UMSHADO account is already linked to another Umcimby account. Please contact support.", "error")
+        return redirect(url_for("main.login"))
 
     if not _consume_token(token):
         flash("That shared login link has already been used. Please start again from UMSHADO.", "error")
