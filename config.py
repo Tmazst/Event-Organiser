@@ -46,6 +46,12 @@ class Config:
     SHARED_LOGIN_MAX_AGE_SECONDS = int(os.getenv("SHARED_LOGIN_MAX_AGE_SECONDS", "90"))
     UMSHADO_SSO_RECEIVE_URL = os.getenv("UMSHADO_SSO_RECEIVE_URL", "").strip()
 
+    # Cross-app account discovery. Keep this server-to-server secret separate
+    # from both SHARED_LOGIN_SECRET and VENDOR_API_KEY.
+    SHARED_ACCOUNT_DISCOVERY_ENABLED = env_bool("SHARED_ACCOUNT_DISCOVERY_ENABLED", False)
+    SHARED_ACCOUNT_API_KEY = os.getenv("SHARED_ACCOUNT_API_KEY") or None
+    SHARED_ACCOUNT_API_TIMEOUT_SECONDS = float(os.getenv("SHARED_ACCOUNT_API_TIMEOUT_SECONDS", "5"))
+
     PAYMENT_CURRENCY = os.getenv("MOJAPOS_CURRENCY", "SZL")
     MOJAPOS_SUPPORTED_COUNTRIES = tuple(
         country.strip().upper()
