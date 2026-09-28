@@ -7,3 +7,4 @@ instance/
 .pytest_cache/
 app/static/uploads/events/*
 !app/static/uploads/events/.gitkeep
+venv/
