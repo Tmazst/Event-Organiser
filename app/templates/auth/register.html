@@ -17,6 +17,11 @@
         <p>You already have an UMSHADO account. Sign in there once and we can use it to create this Umcimby account.</p>
         <a class="button secondary" href="{{ shared_continue_url }}"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Continue with UMSHADO</a>
       </div>
+    {% elif config.SHARED_LOGIN_HANDOFF_ENABLED and not invite_token %}
+      <div class="form-notice">
+        <p>Already use UMSHADO? Use that account instead of creating another password.</p>
+        <a class="button secondary" href="{{ url_for('shared_login.with_umshado') }}"><i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> Continue with UMSHADO</a>
+      </div>
     {% endif %}
     <div class="account-type-actions">
       <button class="button primary" type="submit" name="account_type" value="organizer"><i class="fa-solid fa-calendar-plus" aria-hidden="true"></i> Create account</button>
