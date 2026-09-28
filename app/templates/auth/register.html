@@ -4,14 +4,20 @@
 {% block content %}
 <section class="auth-layout">
   <div class="welcome-panel"><p class="eyebrow">A simple beginning</p><h1>Start with the numbers that matter.</h1><p>Create your event plan and begin collecting comparable vendor quotations.</p></div>
-  <form class="card form-card" method="post">
+  <form class="card form-card" method="post" action="{{ url_for('shared_accounts.register') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="invite_token" value="{{ invite_token }}">
     <h2>Create account</h2>
-    <label>Your name<input name="name" required autocomplete="name"></label>
-    <label>Email<input type="email" name="email" required autocomplete="email"></label>
+    <label>Your name<input name="name" value="{{ name_value|default('') }}" required autocomplete="name"></label>
+    <label>Email<input type="email" name="email" value="{{ email_value|default('') }}" required autocomplete="email"></label>
     {{ phone_fields(countries, selected_country, phone_value) }}
     <label>Password<input type="password" name="password" minlength="6" required autocomplete="new-password"></label>
+    {% if shared_continue_url %}
+      <div class="form-notice">
+        <p>You already have an UMSHADO account. Sign in there once and we can use it to create this Umcimby account.</p>
+        <a class="button secondary" href="{{ shared_continue_url }}"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Continue with UMSHADO</a>
+      </div>
+    {% endif %}
     <div class="account-type-actions">
       <button class="button primary" type="submit" name="account_type" value="organizer"><i class="fa-solid fa-calendar-plus" aria-hidden="true"></i> Create organizer account</button>
       {% if not invite_token %}<button class="button secondary" type="submit" name="account_type" value="vendor"><i class="fa-solid fa-store" aria-hidden="true"></i> I am a vendor</button>{% endif %}

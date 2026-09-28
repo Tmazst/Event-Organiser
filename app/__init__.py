@@ -88,10 +88,10 @@ def create_app(config_class=Config):
     def csrf_protect():
         if not app.config.get("CSRF_PROTECT", True) or request.method != "POST":
             return None
-        # Browser forms use session CSRF tokens. The vendor API is a
-        # server-to-server JSON API and authenticates with X-Vendor-API-Key,
-        # so it must not be blocked by browser-form CSRF validation.
-        if request.endpoint == "mojapos_payments.mojapos_callback" or request.blueprint == "vendor_api":
+        if (
+            request.endpoint in {"mojapos_payments.mojapos_callback", "shared_accounts.lookup"}
+            or request.blueprint == "vendor_api"
+        ):
             return None
         expected = session.get("csrf_token", "")
         supplied = request.form.get("csrf_token", "")
@@ -144,6 +144,9 @@ def create_app(config_class=Config):
 
     from .vendor_api import bp as vendor_api_bp
     app.register_blueprint(vendor_api_bp)
+
+    from .shared_accounts import bp as shared_accounts_bp
+    app.register_blueprint(shared_accounts_bp)
 
     from .shared_login import bp as shared_login_bp
     app.register_blueprint(shared_login_bp)
