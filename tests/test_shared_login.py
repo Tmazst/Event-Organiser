@@ -124,3 +124,36 @@ def test_expired_handoff_is_rejected(app, client):
     app.config["SHARED_LOGIN_MAX_AGE_SECONDS"] = -1
     response = client.get(f"/shared-login/from-umshado?token={token}", follow_redirects=True)
     assert b"shared login link expired" in response.data
+
+
+def test_with_umshado_starts_remote_authentication(client):
+    response = client.get("/shared-login/with-umshado")
+    assert response.status_code == 302
+    assert response.headers["Location"] == (
+        "https://wedding.example/shared-login/continue-to-umcimby?account_type=organizer"
+    )
+
+
+def test_login_page_offers_continue_with_umshado(client):
+    response = client.get("/login")
+    assert response.status_code == 200
+    assert b"Continue with UMSHADO" in response.data
+    assert b"/shared-login/with-umshado" in response.data
+
+
+def test_new_umshado_general_user_is_sent_to_event_setup(app, client):
+    token = make_token(
+        app,
+        email="planner@example.com",
+        phone="76124567",
+        name="Planner",
+        provision=True,
+        account_type="organizer",
+    )
+    response = client.get(f"/shared-login/from-umshado?token={token}")
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/event/setup")
+    with app.app_context():
+        user = db.session.scalar(db.select(User).where(User.email == "planner@example.com"))
+        assert user is not None
+        assert user.account_type == "organizer"
