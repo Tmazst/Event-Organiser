@@ -33,6 +33,10 @@ class Config:
     OWNER_PLAN_PRICE = os.getenv("OWNER_PLAN_PRICE", "40.00")
     STAKEHOLDER_PRICE = os.getenv("STAKEHOLDER_PRICE", "30.00")
 
+    # Public read-only marketing demo.
+    DEMO_MODE_ENABLED = env_bool("DEMO_MODE_ENABLED", True)
+    DEMO_ACCOUNT_EMAIL = os.getenv("DEMO_ACCOUNT_EMAIL", "demo@umcimby.app")
+
     # Shared vendor service. Disabled by default so it can be deployed safely.
     VENDOR_FEATURE_ENABLED = env_bool("VENDOR_FEATURE_ENABLED", False)
     VENDOR_STORE_MANAGEMENT_ENABLED = env_bool("VENDOR_STORE_MANAGEMENT_ENABLED", True)

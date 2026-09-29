@@ -151,6 +151,9 @@ def create_app(config_class=Config):
     from .shared_login import bp as shared_login_bp
     app.register_blueprint(shared_login_bp)
 
+    from .demo import register_demo
+    register_demo(app)
+
     from .payment_gateway import build_gateway
     build_gateway().init_app(app)
 
