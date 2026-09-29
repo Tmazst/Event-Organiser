@@ -40,6 +40,9 @@
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}
     {% endwith %}
+    {% if is_demo_account %}
+      <div class="plan-notice"><strong>Demo mode:</strong> You can explore this event project, but changes are not saved.{% if not demo_can_invite %} You joined through a temporary view-only invitation.{% endif %}</div>
+    {% endif %}
     {% block content %}{% endblock %}
   </main>
   <footer class="footer">
