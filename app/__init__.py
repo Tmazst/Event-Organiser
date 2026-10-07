@@ -136,6 +136,9 @@ def create_app(config_class=Config):
     from .routes import bp
     app.register_blueprint(bp)
 
+    from .admin import bp as admin_bp
+    app.register_blueprint(admin_bp)
+
     from .billing import bp as billing_bp
     app.register_blueprint(billing_bp)
 
