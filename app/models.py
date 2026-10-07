@@ -86,6 +86,9 @@ class BudgetCategory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
     planned_amount = db.Column(db.Numeric(12, 2), default=0, nullable=False)
+    requires_quotation = db.Column(db.Boolean, default=True, nullable=False)
+    funding_source = db.Column(db.String(20), nullable=True)
+    funding_source_name = db.Column(db.String(160), nullable=True)
     event_id = db.Column(db.Integer, db.ForeignKey("event.id"), nullable=False, index=True)
     quotations = db.relationship("Quotation", backref="category", lazy=True, cascade="all, delete-orphan")
 
@@ -95,7 +98,15 @@ class BudgetCategory(db.Model):
 
     @property
     def selected_amount(self):
+        if not self.requires_quotation:
+            return self.planned_amount
         return self.selected_quote.amount if self.selected_quote else self.planned_amount
+
+    @property
+    def committed_amount(self):
+        if not self.requires_quotation:
+            return self.planned_amount
+        return self.selected_quote.amount if self.selected_quote else 0
 
 
 class Quotation(db.Model):

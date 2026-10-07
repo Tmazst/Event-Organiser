@@ -389,25 +389,37 @@ def budget():
         if event.plan_tier == "free" and len(event.categories) >= free_limit:
             flash(f"The Free plan includes {free_limit} budget items. Upgrade to add more.", "error")
             return redirect(url_for("billing.pricing"))
-        if name:
+        handling = request.form.get("handling", "quotation")
+        if handling not in {"quotation", "direct"}:
+            handling = "quotation"
+        requires_quotation = handling == "quotation"
+        funding_source = request.form.get("funding_source", "").strip() if not requires_quotation else ""
+        funding_source_name = request.form.get("funding_source_name", "").strip() if not requires_quotation else ""
+        valid_sources = {"self", "stakeholder", "sponsor", "other"}
+        if name and (requires_quotation or funding_source in valid_sources):
             db.session.add(BudgetCategory(
                 name=name,
                 planned_amount=money(request.form.get("planned_amount")),
+                requires_quotation=requires_quotation,
+                funding_source=funding_source or None,
+                funding_source_name=funding_source_name or None,
                 event_id=event.id,
             ))
             db.session.commit()
             flash("Budget item added.", "success")
+        elif name:
+            flash("Choose how this direct budget item is funded.", "error")
         else:
             flash("Enter a name for the budget item.", "error")
         return redirect(url_for("main.budget"))
     planned_total = sum((category.planned_amount for category in event.categories), start=Decimal("0"))
-    chosen_total = sum(
-        (category.selected_quote.amount for category in event.categories if category.selected_quote),
+    committed_total = sum(
+        (category.committed_amount for category in event.categories),
         start=Decimal("0"),
     )
     return render_template(
         "budget/index.html", event=event, planned_total=planned_total,
-        chosen_total=chosen_total, budget_remaining=event.budget_target - chosen_total,
+        committed_total=committed_total, budget_remaining=event.budget_target - committed_total,
         free_limit=current_app.config["FREE_BUDGET_ITEM_LIMIT"],
         is_owner=event.owner_id == current_user.id,
     )
@@ -420,6 +432,9 @@ def quotations(category_id):
     category = db.get_or_404(BudgetCategory, category_id)
     if event is None or category.event_id != event.id:
         return ("Not found", 404)
+    if not category.requires_quotation:
+        flash("This budget item is funded directly and does not need quotations.", "error")
+        return redirect(url_for("main.budget"))
     if request.method == "POST":
         vendor_name = request.form.get("vendor_name", "").strip()
         amount = money(request.form.get("amount"))
@@ -446,6 +461,9 @@ def select_quote(quote_id):
     event = current_event()
     if event is None or quote.category.event_id != event.id:
         return ("Not found", 404)
+    if not quote.category.requires_quotation:
+        flash("This budget item is funded directly and does not use quotations.", "error")
+        return redirect(url_for("main.budget"))
     for item in quote.category.quotations:
         item.is_selected = item.id == quote.id
     db.session.commit()
