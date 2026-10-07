@@ -39,8 +39,8 @@ def build_event_report(event):
                               fontSize=8, leading=10, spaceAfter=1 * mm))
     styles.add(ParagraphStyle(name="RightMoney", parent=styles["Normal"], alignment=TA_RIGHT))
 
-    selected_total = sum((category.selected_amount for category in event.categories), start=0)
-    remaining = event.budget_target - selected_total
+    committed_total = sum((category.committed_amount for category in event.categories), start=0)
+    remaining = event.budget_target - committed_total
     event_date = event.event_date.strftime("%d %B %Y") if event.event_date else "Not set"
     event_type = (event.event_type or "Other").replace("_", " ").title()
 
@@ -70,8 +70,8 @@ def build_event_report(event):
     story.extend([
         Paragraph("Budget summary", styles["Heading2"]),
         Table([
-            ["Total budget", "Current estimate", "Remaining" if remaining >= 0 else "Over budget"],
-            [f"E{event.budget_target:,.2f}", f"E{selected_total:,.2f}", f"E{abs(remaining):,.2f}"],
+            ["Total budget", "Committed budget", "Remaining" if remaining >= 0 else "Over budget"],
+            [f"E{event.budget_target:,.2f}", f"E{committed_total:,.2f}", f"E{abs(remaining):,.2f}"],
         ], colWidths=[52 * mm] * 3, style=TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), TEAL), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
             ("FONTNAME", (0, 0), (-1, -1), "UmcimbySansBold"),
@@ -80,20 +80,40 @@ def build_event_report(event):
             ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CFE3DF")),
             ("TOPPADDING", (0, 0), (-1, -1), 8), ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
         ])),
-        Spacer(1, 7 * mm), Paragraph("Budget and selected quotations", styles["Heading2"]),
+        Spacer(1, 7 * mm), Paragraph("Budget and funding", styles["Heading2"]),
     ])
 
-    rows = [["Budget item", "Planned", "Selected vendor", "Final amount"]]
+    rows = [["Budget item", "Planned", "Funding / vendor", "Committed"]]
+    funding_labels = {
+        "self": "Self-funded",
+        "stakeholder": "Stakeholder funded",
+        "sponsor": "Sponsored",
+        "other": "Other funding",
+    }
     for category in event.categories:
         quote = category.selected_quote
+        if category.requires_quotation:
+            source = quote.vendor_name if quote else "Quotation not selected"
+        else:
+            source = funding_labels.get(category.funding_source, "Direct funding")
+            if category.funding_source_name:
+                source = f"{source} - {category.funding_source_name}"
         rows.append([
             category.name,
             f"E{category.planned_amount:,.2f}",
-            quote.vendor_name if quote else "Not selected",
-            f"E{category.selected_amount:,.2f}",
+            source,
+            f"E{category.committed_amount:,.2f}",
         ])
     if len(rows) == 1:
         rows.append(["No budget items added", "-", "-", "-"])
+    else:
+        planned_total = sum((category.planned_amount for category in event.categories), start=0)
+        rows.append([
+            "TOTAL",
+            f"E{planned_total:,.2f}",
+            "",
+            f"E{committed_total:,.2f}",
+        ])
     story.append(Table(rows, repeatRows=1, colWidths=[46 * mm, 30 * mm, 52 * mm, 32 * mm], style=TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), INK), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("FONTNAME", (0, 0), (-1, -1), "UmcimbySans"),
@@ -104,6 +124,8 @@ def build_event_report(event):
         ("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 6),
         ("RIGHTPADDING", (0, 0), (-1, -1), 6), ("TOPPADDING", (0, 0), (-1, -1), 7),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+        ("FONTNAME", (0, -1), (-1, -1), "UmcimbySansBold"),
+        ("LINEABOVE", (0, -1), (-1, -1), 1, TEAL),
     ])))
 
     def footer(canvas, doc):
