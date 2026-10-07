@@ -6,7 +6,7 @@
   <article><span>Event budget</span><strong>E{{ event.budget_target|moneyfmt }}</strong></article>
   <article><span>Items planned</span><strong>E{{ planned_total|moneyfmt }}</strong></article>
   <article style="background-color: rgb(168, 141, 18);"><span>Committed budget</span><strong>E{{ committed_total|moneyfmt }}</strong></article>
-  <article style="background-color: rgb(27, 27, 129);" class="{{ 'negative' if budget_remaining < 0 else '' }}"><span>{{ 'Over budget' if budget_remaining < 0 else 'Available' }}</span><strong>E{{ budget_remaining|abs|moneyfmt }}</strong></article>
+  <article style="" class="stat {{ 'negative' if budget_remaining < 0 else '' }}"><span>{{ 'Over budget' if budget_remaining < 0 else 'Available' }}</span><strong>E{{ budget_remaining|abs|moneyfmt }}</strong></article>
 </section>
 {% if event.plan_tier == 'free' %}
 <div class="plan-notice"><span><strong>Free plan:</strong> {{ event.categories|length }} of {{ free_limit }} budget items used.</span>{% if is_owner %}<a href="{{ url_for('billing.pricing') }}">Upgrade for unlimited items</a>{% endif %}</div>
@@ -19,8 +19,8 @@
     <label>Planned amount (E)<input type="number" name="planned_amount" min="0" step="0.01" required></label>
     <fieldset>
       <legend>How will this item be handled?</legend>
-      <label><input type="radio" name="handling" value="quotation" checked> Get supplier quotations</label>
-      <label><input type="radio" name="handling" value="direct"> Already funded / sponsored</label>
+      <label style="display: flex;"><input type="radio" name="handling" value="quotation" style="width: 18px;" checked> Get supplier quotations</label>
+      <label style="display: flex;margin-top: 7px;"><input type="radio" name="handling" value="direct" style="width: 18px;"> Already funded</label>
     </fieldset>
     <div id="direct-funding-fields" hidden>
       <label>Funding source
