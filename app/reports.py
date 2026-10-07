@@ -106,6 +106,14 @@ def build_event_report(event):
         ])
     if len(rows) == 1:
         rows.append(["No budget items added", "-", "-", "-"])
+    else:
+        planned_total = sum((category.planned_amount for category in event.categories), start=0)
+        rows.append([
+            "TOTAL",
+            f"E{planned_total:,.2f}",
+            "",
+            f"E{committed_total:,.2f}",
+        ])
     story.append(Table(rows, repeatRows=1, colWidths=[46 * mm, 30 * mm, 52 * mm, 32 * mm], style=TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), INK), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("FONTNAME", (0, 0), (-1, -1), "UmcimbySans"),
@@ -116,6 +124,8 @@ def build_event_report(event):
         ("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 6),
         ("RIGHTPADDING", (0, 0), (-1, -1), 6), ("TOPPADDING", (0, 0), (-1, -1), 7),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+        ("FONTNAME", (0, -1), (-1, -1), "UmcimbySansBold"),
+        ("LINEABOVE", (0, -1), (-1, -1), 1, TEAL),
     ])))
 
     def footer(canvas, doc):
