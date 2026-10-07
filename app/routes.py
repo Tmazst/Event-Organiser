@@ -390,7 +390,9 @@ def budget():
             flash(f"The Free plan includes {free_limit} budget items. Upgrade to add more.", "error")
             return redirect(url_for("billing.pricing"))
         handling = request.form.get("handling", "quotation")
-        requires_quotation = handling != "direct"
+        if handling not in {"quotation", "direct"}:
+            handling = "quotation"
+        requires_quotation = handling == "quotation"
         funding_source = request.form.get("funding_source", "").strip() if not requires_quotation else ""
         funding_source_name = request.form.get("funding_source_name", "").strip() if not requires_quotation else ""
         valid_sources = {"self", "stakeholder", "sponsor", "other"}
@@ -459,6 +461,9 @@ def select_quote(quote_id):
     event = current_event()
     if event is None or quote.category.event_id != event.id:
         return ("Not found", 404)
+    if not quote.category.requires_quotation:
+        flash("This budget item is funded directly and does not use quotations.", "error")
+        return redirect(url_for("main.budget"))
     for item in quote.category.quotations:
         item.is_selected = item.id == quote.id
     db.session.commit()
