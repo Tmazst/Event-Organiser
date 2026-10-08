@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block title %}Events | Super Admin{% endblock %}{% block content %}
+<section class="page-heading"><div><p class="eyebrow">Super admin</p><h1>All events</h1></div><a class="button secondary" href="{{ url_for('admin.dashboard') }}">Admin overview</a></section>
+<section class="card"><div class="table-wrap"><table><thead><tr><th>ID</th><th>Event</th><th>Owner</th><th>Type</th><th>Date</th><th>Plan</th><th>Budget</th></tr></thead><tbody>
+{% for event in events %}<tr><td>{{ event.id }}</td><td>{{ event.title }}</td><td>{{ event.owner.email }}</td><td>{{ event.event_type }}</td><td>{{ event.event_date or '-' }}</td><td>{{ event.plan_tier }}</td><td>E{{ event.budget_target|moneyfmt }}</td></tr>{% else %}<tr><td colspan="7">No events found.</td></tr>{% endfor %}
+</tbody></table></div></section>{% endblock %}

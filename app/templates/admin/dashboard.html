@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Super Admin | Umcimby{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <div>
+    <p class="eyebrow">Super admin</p>
+    <h1>Umcimby overview</h1>
+    <p>Platform-wide access to users, events, vendors and payments.</p>
+  </div>
+</section>
+
+<section class="stats-grid">
+  <article class="stat-card"><span>Users</span><strong>{{ total_users }}</strong></article>
+  <article class="stat-card"><span>Events</span><strong>{{ total_events }}</strong></article>
+  <article class="stat-card"><span>Vendors</span><strong>{{ total_vendors }}</strong></article>
+  <article class="stat-card"><span>Payments</span><strong>{{ total_payments }}</strong></article>
+  <article class="stat-card"><span>Completed revenue</span><strong>E{{ completed_revenue|moneyfmt }}</strong></article>
+</section>
+
+<section class="card">
+  <h2>Manage platform</h2>
+  <div class="action-row">
+    <a class="button" href="{{ url_for('admin.users') }}">All users</a>
+    <a class="button secondary" href="{{ url_for('admin.events') }}">All events</a>
+    <a class="button secondary" href="{{ url_for('admin.vendors') }}">All vendors</a>
+    <a class="button secondary" href="{{ url_for('admin.payments') }}">All payments</a>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Recent users</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Name</th><th>Email</th><th>Type</th><th>Joined</th></tr></thead>
+    <tbody>{% for user in recent_users %}<tr><td>{{ user.name }}</td><td>{{ user.email }}</td><td>{{ user.account_type }}</td><td>{{ user.created_at.strftime('%d %b %Y') }}</td></tr>{% else %}<tr><td colspan="4">No users yet.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+
+<section class="card">
+  <h2>Recent events</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Event</th><th>Owner</th><th>Plan</th><th>Created</th></tr></thead>
+    <tbody>{% for event in recent_events %}<tr><td>{{ event.title }}</td><td>{{ event.owner.email }}</td><td>{{ event.plan_tier }}</td><td>{{ event.created_at.strftime('%d %b %Y') }}</td></tr>{% else %}<tr><td colspan="4">No events yet.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+
+<section class="card">
+  <h2>Recent payments</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Reference</th><th>User</th><th>Amount</th><th>Status</th></tr></thead>
+    <tbody>{% for payment in recent_payments %}<tr><td>{{ payment.external_ref_id }}</td><td>{{ payment.user.email }}</td><td>E{{ payment.amount|moneyfmt }}</td><td>{{ payment.status }}</td></tr>{% else %}<tr><td colspan="4">No payments yet.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endblock %}

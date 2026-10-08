@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block title %}Users | Super Admin{% endblock %}{% block content %}
+<section class="page-heading"><div><p class="eyebrow">Super admin</p><h1>All users</h1></div><a class="button secondary" href="{{ url_for('admin.dashboard') }}">Admin overview</a></section>
+<section class="card"><div class="table-wrap"><table><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Type</th><th>Admin</th><th>Joined</th></tr></thead><tbody>
+{% for user in users %}<tr><td>{{ user.id }}</td><td>{{ user.name }}</td><td>{{ user.email }}</td><td>{{ user.phone_display or '-' }}</td><td>{{ user.account_type }}</td><td>{% if user.is_super_admin %}Super admin{% elif user.is_admin %}Admin{% else %}-{% endif %}</td><td>{{ user.created_at.strftime('%d %b %Y') }}</td></tr>{% else %}<tr><td colspan="7">No users found.</td></tr>{% endfor %}
+</tbody></table></div></section>{% endblock %}
